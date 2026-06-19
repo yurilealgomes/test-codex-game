@@ -126,6 +126,7 @@ PauseMenu
 GameOverPanel
 LevelUpPanel
 UpgradeCardUI
+MenuButtonNavigator
 BossWarningUI
 BossHealthBar
 SynergyNotificationUI
@@ -136,6 +137,8 @@ VictoryPanel
 All UI text is in English.
 
 `HUDController` smooths HP and XP bar fill values, shows short feedback for XP gains, level ups, and special pickups, and adds a subtle low-health pulse. The warning overlay is non-interactive so it does not block mouse input on gameplay choice panels.
+
+Menus and card choices support mouse click, mouse hover selection, `A` / `D` or arrow-key movement, and `Space` / `Enter` confirmation. `MenuButtonNavigator` handles simple button groups, while card panels keep their own selection outlines.
 
 ## Debug Tools
 
@@ -164,9 +167,23 @@ Upgrade rarity values are `Common`, `Uncommon`, `Magic`, `Epic`, and `Legendary`
 
 ## Pickups
 
-Special pickups use `PickupType`, `PickupData`, `SpecialPickup`, and `PickupManager`. `Magnet` is implemented and calls `XPOrb.PullAllTo` so all active XP Orbs move toward the player.
+Special pickups use `PickupType`, `PickupData`, `SpecialPickup`, and `PickupManager`. `Magnet` is implemented and calls `XPOrb.PullAllTo` so all active XP Orbs move toward the player. `Heal` restores a flat amount of player HP.
 
-The Magnet placeholder is built from runtime Unity primitives instead of an external asset. `SpecialPickup` applies bobbing and pulse motion to make special drops visually distinct from XP orbs.
+Special pickup placeholders are built from runtime Unity primitives instead of external assets. `SpecialPickup` applies bobbing, pulse motion, shape toggles, and beacon lights to make special drops visually distinct from XP orbs.
+
+## XP Rarity
+
+`XPOrb` maps XP value to `Common`, `Uncommon`, `Magic`, `Epic`, or `Legendary` rarity. Rarity controls color, size, light intensity, and beacon strength. Enemy XP rewards scale modestly with elapsed minutes and bosses defeated, while the XP requirement growth is tuned lower so late-game level ups continue.
+
+XP rarity thresholds:
+
+```text
+Common: 1-2 XP
+Uncommon: 3-6 XP
+Magic: 7-13 XP
+Epic: 14-27 XP
+Legendary: 28+ XP
+```
 
 ## Chain Lightning
 

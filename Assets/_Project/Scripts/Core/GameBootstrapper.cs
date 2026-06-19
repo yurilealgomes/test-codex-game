@@ -92,7 +92,7 @@ namespace ArcaneSurvival
             player.layer = LayerOrDefault("Player");
             player.transform.position = Vector3.zero;
             player.transform.localScale = new Vector3(1f, 1.25f, 1f);
-            SetColor(player, new Color(0.45f, 0.88f, 1f));
+            SetColor(player, new Color(0.08f, 0.38f, 0.42f));
 
             PlayerStats stats = player.AddComponent<PlayerStats>();
             player.AddComponent<PlayerVisualController>();
@@ -142,7 +142,7 @@ namespace ArcaneSurvival
             poolManager.RegisterPool("Enemy", CreateEnemyPrefab(prefabRoot.transform), 80, database.PerformanceSettings.MaxAliveEnemies);
             poolManager.RegisterPool("Boss", CreateBossPrefab(prefabRoot.transform), 2, 8);
             poolManager.RegisterPool("PlayerProjectile", CreateProjectilePrefab(prefabRoot.transform, "Player Projectile Prefab", new Color(0.32f, 0.68f, 1f), 0.34f), 80, database.PerformanceSettings.MaxAliveProjectiles);
-            poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.14f, 0.05f), 0.38f), 40, 180);
+            poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.22f, 0.02f), 0.38f), 40, 180);
             poolManager.RegisterPool("XPOrb", CreateXpOrbPrefab(prefabRoot.transform), 80, 500);
             poolManager.RegisterPool("SpecialPickup", CreateSpecialPickupPrefab(prefabRoot.transform), 8, 48);
             poolManager.RegisterPool("FloatingDamageText", CreateFloatingTextPrefab(prefabRoot.transform), 24, database.PerformanceSettings.MaxFloatingDamageTexts);
@@ -197,6 +197,7 @@ namespace ArcaneSurvival
             orb.transform.localScale = Vector3.one * 0.45f;
             orb.layer = LayerOrDefault("Pickup");
             SetColor(orb, new Color(0.25f, 0.7f, 1f));
+            AddDropBeacon(orb, new Color(0.25f, 0.7f, 1f), 3.2f, 0.06f, 4f, 1f);
             orb.AddComponent<PooledObject>();
             orb.AddComponent<XPOrb>();
             return orb;
@@ -243,6 +244,21 @@ namespace ArcaneSurvival
             RemoveCollider(rightPole);
             SetColor(rightPole, new Color(1f, 0.95f, 0.35f));
 
+            GameObject healVertical = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            healVertical.name = "Heal Vertical Bar";
+            healVertical.transform.SetParent(pickup.transform, false);
+            healVertical.transform.localScale = new Vector3(0.16f, 0.62f, 0.16f);
+            RemoveCollider(healVertical);
+            SetColor(healVertical, new Color(0.25f, 1f, 0.42f));
+
+            GameObject healHorizontal = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            healHorizontal.name = "Heal Horizontal Bar";
+            healHorizontal.transform.SetParent(pickup.transform, false);
+            healHorizontal.transform.localScale = new Vector3(0.62f, 0.16f, 0.16f);
+            RemoveCollider(healHorizontal);
+            SetColor(healHorizontal, new Color(0.25f, 1f, 0.42f));
+
+            AddDropBeacon(pickup, new Color(0.2f, 0.85f, 1f), 4.2f, 0.09f, 7f, 2.2f);
             pickup.AddComponent<PooledObject>();
             pickup.AddComponent<SpecialPickup>();
             return pickup;
@@ -371,7 +387,7 @@ namespace ArcaneSurvival
             database.Skills.Add(CreateSkill("Flame Orbit", "Creates fire orbs that orbit the caster and burn nearby enemies.", SkillEffectKind.FlameOrbit, SkillType.Passive, new[] { SkillTag.Fire }, 7f, 0f, 0f, 2.8f, 0f, 2, 0f, true, SkillTargetingMode.AroundPlayer, new Color(1f, 0.32f, 0.08f)));
             database.Skills.Add(CreateSkill("Ice Nova", "Releases a freezing burst around the player and slows enemies.", SkillEffectKind.IceNova, SkillType.Active, new[] { SkillTag.Ice }, 20f, 4.6f, 0f, 4.2f, 2.5f, 1, 0f, true, SkillTargetingMode.AroundPlayer, new Color(0.45f, 0.85f, 1f)));
             database.Skills.Add(CreateSkill("Lightning Chain", "Strikes an enemy and jumps to nearby targets.", SkillEffectKind.LightningChain, SkillType.Active, new[] { SkillTag.Lightning }, 22f, 3.1f, 17f, 0f, 0f, 1, 0f, true, SkillTargetingMode.Chain, new Color(1f, 0.9f, 0.18f)));
-            database.Skills.Add(CreateSkill("Void Zone", "Opens a damaging void field under a nearby enemy.", SkillEffectKind.VoidZone, SkillType.Active, new[] { SkillTag.Void }, 9f, 5.2f, 16f, 3.2f, 4f, 1, 0f, true, SkillTargetingMode.GroundAtEnemy, new Color(0.2f, 0.05f, 0.32f)));
+            database.Skills.Add(CreateSkill("Void Zone", "Opens a damaging void field under a nearby enemy.", SkillEffectKind.VoidZone, SkillType.Active, new[] { SkillTag.Void }, 9f, 5.2f, 16f, 3.2f, 4f, 1, 0f, true, SkillTargetingMode.GroundAtEnemy, new Color(0.11f, 0.02f, 0.18f)));
             database.Skills.Add(CreateSkill("Nature Spikes", "Summons piercing spikes below nearby enemies.", SkillEffectKind.NatureSpikes, SkillType.Active, new[] { SkillTag.Nature }, 32f, 3.8f, 15f, 1f, 0f, 3, 0f, true, SkillTargetingMode.NearbyEnemies, new Color(0.25f, 0.78f, 0.35f)));
         }
 
@@ -461,6 +477,13 @@ namespace ArcaneSurvival
             magnet.VisualColor = new Color(0.2f, 0.85f, 1f);
             magnet.Value = 1f;
             database.Pickups.Add(magnet);
+
+            PickupData heal = ScriptableObject.CreateInstance<PickupData>();
+            heal.PickupName = "Heal";
+            heal.Type = PickupType.Heal;
+            heal.VisualColor = new Color(0.25f, 1f, 0.42f);
+            heal.Value = 32f;
+            database.Pickups.Add(heal);
         }
 
         private static void CreateUpgrades(GameDatabase database)
@@ -477,6 +500,10 @@ namespace ArcaneSurvival
             AddUpgrade(database, "Ruinous Crits", "Increase critical damage.", UpgradeRarity.Epic, UpgradeEffect.IncreaseCriticalDamage, 0.28f, "", "Player");
             AddUpgrade(database, "Lucky Charm", "Luck +1.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseLuck, 1f, "", "Player");
             AddUpgrade(database, "Better Omens", "Luck +2.", UpgradeRarity.Magic, UpgradeEffect.IncreaseLuck, 2f, "", "Player");
+            AddUpgrade(database, "Arcane Aegis", "Armor +2.0.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseArmor, 2f, "", "Player");
+            AddUpgrade(database, "Runic Plating", "Armor +4.0.", UpgradeRarity.Magic, UpgradeEffect.IncreaseArmor, 4f, "", "Player");
+            AddUpgrade(database, "Restorative Ward", "Health Regeneration +1.2.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseRegeneration, 1.2f, "", "Player");
+            AddUpgrade(database, "Living Barrier", "Health Regeneration +2.0.", UpgradeRarity.Epic, UpgradeEffect.IncreaseRegeneration, 2f, "", "Player");
             AddUpgrade(database, "Learn Arcane Bolt", "Unlock Arcane Bolt.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Arcane Bolt", "Arcane Bolt");
             AddUpgrade(database, "Learn Flame Orbit", "Unlock Flame Orbit.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Flame Orbit", "Flame Orbit");
             AddUpgrade(database, "Learn Ice Nova", "Unlock Ice Nova.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Ice Nova", "Ice Nova");
@@ -552,6 +579,32 @@ namespace ArcaneSurvival
             {
                 Object.Destroy(collider);
             }
+        }
+
+        private static void AddDropBeacon(GameObject root, Color color, float height, float width, float lightRange, float lightIntensity)
+        {
+            GameObject beacon = new GameObject("Drop Beacon", typeof(LineRenderer));
+            beacon.transform.SetParent(root.transform, false);
+            LineRenderer lineRenderer = beacon.GetComponent<LineRenderer>();
+            Shader shader = Shader.Find("Sprites/Default");
+            lineRenderer.material = new Material(shader != null ? shader : Shader.Find("Standard"));
+            lineRenderer.useWorldSpace = false;
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, Vector3.zero);
+            lineRenderer.SetPosition(1, Vector3.up * height);
+            lineRenderer.startWidth = width;
+            lineRenderer.endWidth = width * 3f;
+            lineRenderer.startColor = new Color(color.r, color.g, color.b, 0.85f);
+            lineRenderer.endColor = new Color(color.r, color.g, color.b, 0f);
+
+            GameObject lightObject = new GameObject("Drop Beacon Light", typeof(Light));
+            lightObject.transform.SetParent(root.transform, false);
+            lightObject.transform.localPosition = Vector3.up * 1.1f;
+            Light light = lightObject.GetComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.range = lightRange;
+            light.intensity = lightIntensity;
         }
 
         private static Material CreateMaterial(Color color)

@@ -67,7 +67,8 @@ namespace ArcaneSurvival
                 cards[i].gameObject.SetActive(hasSkill);
                 if (hasSkill)
                 {
-                    cards[i].Setup(database.Skills[i], SelectSkill);
+                    int cardIndex = i;
+                    cards[i].Setup(database.Skills[i], SelectSkill, () => SelectIndex(cardIndex));
                 }
             }
 

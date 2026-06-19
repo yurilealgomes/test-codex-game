@@ -1,10 +1,11 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace ArcaneSurvival
 {
-    public sealed class UpgradeCardUI : MonoBehaviour
+    public sealed class UpgradeCardUI : MonoBehaviour, IPointerEnterHandler
     {
         private Image background;
         private Text title;
@@ -14,6 +15,7 @@ namespace ArcaneSurvival
         private Button button;
         private Outline outline;
         private Color baseColor;
+        private Action hoverCallback;
 
         public void Build(Transform parent, int index)
         {
@@ -38,8 +40,9 @@ namespace ArcaneSurvival
             affectedSkill = UIFactory.CreateText(transform, "Affected Skill", "", 14, new Color(0.85f, 0.9f, 1f), TextAnchor.MiddleCenter, new Vector2(0.08f, 0.21f), new Vector2(0.92f, 0.27f), Vector2.zero, Vector2.zero);
         }
 
-        public void Setup(UpgradeData upgrade, Action<UpgradeData> onSelected)
+        public void Setup(UpgradeData upgrade, Action<UpgradeData> onSelected, Action onHovered)
         {
+            hoverCallback = onHovered;
             Color rarityColor = UpgradeRarityUtility.GetColor(upgrade.Rarity);
             baseColor = new Color(rarityColor.r * 0.45f, rarityColor.g * 0.45f, rarityColor.b * 0.45f, 0.96f);
             background.color = baseColor;
@@ -67,6 +70,14 @@ namespace ArcaneSurvival
             }
 
             transform.localScale = selected ? Vector3.one * 1.04f : Vector3.one;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (hoverCallback != null)
+            {
+                hoverCallback.Invoke();
+            }
         }
     }
 }

@@ -49,7 +49,8 @@ namespace ArcaneSurvival
             SpawnXp(GetAdjustedEnemyXp(xpDrop), position);
             if (pickupManager != null)
             {
-                pickupManager.TrySpawnMagnet(position, elite ? 0.02f : 0.002f);
+                pickupManager.TrySpawnMagnet(position, elite ? 0.06f : 0.007f);
+                pickupManager.TrySpawnHeal(position, elite ? 0.035f : 0.004f);
             }
         }
 
@@ -83,7 +84,8 @@ namespace ArcaneSurvival
         {
             if (pickupManager != null)
             {
-                pickupManager.TrySpawnMagnet(position, 0.25f);
+                pickupManager.TrySpawnMagnet(position, 0.55f);
+                pickupManager.TrySpawnHeal(position, 0.35f);
             }
         }
 
@@ -91,7 +93,8 @@ namespace ArcaneSurvival
         {
             if (pickupManager != null)
             {
-                pickupManager.TrySpawnMagnet(position, 0.01f);
+                pickupManager.TrySpawnMagnet(position, 0.035f);
+                pickupManager.TrySpawnHeal(position, 0.025f);
             }
         }
 
@@ -102,12 +105,14 @@ namespace ArcaneSurvival
                 return xpDrop;
             }
 
+            float minutes = runTimer.MinutesElapsed;
+            float timeMultiplier = 1f + minutes * 0.035f + BossesDefeated * 0.18f;
             if (runTimer.ElapsedTime < balanceSettings.RangedEnemyWeightRampStartSeconds)
             {
-                return xpDrop * balanceSettings.EarlyXpRewardMultiplier;
+                return xpDrop * balanceSettings.EarlyXpRewardMultiplier * timeMultiplier;
             }
 
-            return xpDrop;
+            return xpDrop * timeMultiplier;
         }
     }
 }

@@ -5,7 +5,7 @@ namespace ArcaneSurvival
     public sealed class RunBalanceSettings
     {
         public float BaseRequiredXp = 18f;
-        public float XpGrowthMultiplier = 1.32f;
+        public float XpGrowthMultiplier = 1.26f;
         public float FirstBossTimeSeconds = 900f;
         public float BossIntervalSeconds = 900f;
         public float BaseSpawnInterval = 3.25f;
@@ -15,6 +15,6 @@ namespace ArcaneSurvival
         public int MaxBatchSize = 42;
         public float RangedEnemyUnlockTimeSeconds = 240f;
         public float RangedEnemyWeightRampStartSeconds = 480f;
-        public float EarlyXpRewardMultiplier = 0.75f;
+        public float EarlyXpRewardMultiplier = 0.95f;
     }
 }

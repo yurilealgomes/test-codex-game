@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace ArcaneSurvival
@@ -40,6 +41,8 @@ namespace ArcaneSurvival
             continueOutline.effectColor = new Color(1f, 0.85f, 0.35f);
             endOutline.effectDistance = new Vector2(5f, 5f);
             continueOutline.effectDistance = new Vector2(5f, 5f);
+            AddHoverSelection(endRunButton, 0);
+            AddHoverSelection(continueButton, 1);
             Hide();
         }
 
@@ -111,6 +114,20 @@ namespace ArcaneSurvival
             selectedIndex = (index + 2) % 2;
             endOutline.enabled = selectedIndex == 0;
             continueOutline.enabled = selectedIndex == 1;
+        }
+
+        private void AddHoverSelection(Button button, int index)
+        {
+            EventTrigger trigger = button.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = button.gameObject.AddComponent<EventTrigger>();
+            }
+
+            EventTrigger.Entry entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            int capturedIndex = index;
+            entry.callback.AddListener(_ => SelectIndex(capturedIndex));
+            trigger.triggers.Add(entry);
         }
 
         private void EndRun()

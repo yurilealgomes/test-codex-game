@@ -52,17 +52,17 @@ namespace ArcaneSurvival
             visualRoot.SetParent(transform, false);
             visualRoot.localPosition = Vector3.zero;
 
-            CreatePart("Robe", PrimitiveType.Capsule, visualRoot, new Vector3(0f, 0.72f, 0f), new Vector3(0.82f, 1.15f, 0.82f), new Color(0.16f, 0.12f, 0.36f));
+            CreatePart("Robe", PrimitiveType.Capsule, visualRoot, new Vector3(0f, 0.72f, 0f), new Vector3(0.82f, 1.15f, 0.82f), new Color(0.04f, 0.18f, 0.24f));
             CreatePart("Head", PrimitiveType.Sphere, visualRoot, new Vector3(0f, 1.42f, 0f), new Vector3(0.46f, 0.42f, 0.46f), new Color(0.82f, 0.68f, 0.52f));
-            CreatePart("Hat Brim", PrimitiveType.Cylinder, visualRoot, new Vector3(0f, 1.64f, 0f), new Vector3(0.76f, 0.08f, 0.76f), new Color(0.22f, 0.16f, 0.58f));
-            CreatePart("Hat Crown", PrimitiveType.Cylinder, visualRoot, new Vector3(0f, 1.92f, 0f), new Vector3(0.42f, 0.58f, 0.42f), new Color(0.26f, 0.18f, 0.68f));
+            CreatePart("Hat Brim", PrimitiveType.Cylinder, visualRoot, new Vector3(0f, 1.64f, 0f), new Vector3(0.76f, 0.08f, 0.76f), new Color(0.05f, 0.30f, 0.34f));
+            CreatePart("Hat Crown", PrimitiveType.Cylinder, visualRoot, new Vector3(0f, 1.92f, 0f), new Vector3(0.42f, 0.58f, 0.42f), new Color(0.07f, 0.38f, 0.42f));
 
             Transform staffRoot = new GameObject("Staff Aim Root").transform;
             staffRoot.SetParent(visualRoot, false);
             staffRoot.localPosition = new Vector3(0.46f, 0.95f, 0.18f);
             GameObject staff = CreatePart("Staff", PrimitiveType.Cylinder, staffRoot, new Vector3(0f, 0.25f, 0.44f), new Vector3(0.08f, 0.7f, 0.08f), new Color(0.42f, 0.25f, 0.12f));
             staff.transform.localRotation = Quaternion.Euler(65f, 0f, 0f);
-            CreatePart("Staff Tip", PrimitiveType.Sphere, staffRoot, new Vector3(0f, 0.73f, 0.88f), new Vector3(0.22f, 0.22f, 0.22f), new Color(0.35f, 0.8f, 1f));
+            CreatePart("Staff Tip", PrimitiveType.Sphere, staffRoot, new Vector3(0f, 0.73f, 0.88f), new Vector3(0.22f, 0.22f, 0.22f), new Color(1f, 0.82f, 0.28f));
 
             WizardStaffAim staffAim = GetComponent<WizardStaffAim>();
             if (staffAim == null)

@@ -11,13 +11,19 @@ namespace ArcaneSurvival
 
         private Transform player;
         private Renderer cachedRenderer;
+        private LineRenderer beaconRenderer;
+        private Light beaconLight;
+        private UpgradeRarity rarity = UpgradeRarity.Common;
         private float despawnDistance = 60f;
         private bool collected;
         private bool magnetized;
+        private float age;
 
         private void Awake()
         {
             cachedRenderer = GetComponentInChildren<Renderer>();
+            beaconRenderer = GetComponentInChildren<LineRenderer>(true);
+            beaconLight = GetComponentInChildren<Light>(true);
         }
 
         public void Initialize(float xpValue, float maxDistance)
@@ -26,6 +32,7 @@ namespace ArcaneSurvival
             despawnDistance = maxDistance;
             collected = false;
             magnetized = false;
+            age = 0f;
 
             PlayerController playerController;
             if (ServiceLocator.TryGet(out playerController))
@@ -42,6 +49,11 @@ namespace ArcaneSurvival
             {
                 return;
             }
+
+            age += Time.deltaTime;
+            float bob = Mathf.Sin(age * 4.5f) * 0.07f;
+            Transform visual = cachedRenderer != null ? cachedRenderer.transform : transform;
+            visual.localPosition = Vector3.up * bob;
 
             float distance = MathUtils.DistanceXZ(transform.position, player.position);
             if (magnetized || distance < 5f)
@@ -71,7 +83,7 @@ namespace ArcaneSurvival
 
             if (value >= 7f)
             {
-                SkillEffect.SpawnVfx(transform.position, GetTierColor(value), Vector3.one * 0.55f, 0.16f);
+                SkillEffect.SpawnVfx(transform.position, UpgradeRarityUtility.GetColor(rarity), Vector3.one * 0.55f, 0.16f);
             }
 
             ReturnToPool();
@@ -93,6 +105,7 @@ namespace ArcaneSurvival
         public void OnSpawnedFromPool()
         {
             collected = false;
+            age = 0f;
             if (!ActiveOrbs.Contains(this))
             {
                 ActiveOrbs.Add(this);
@@ -103,6 +116,7 @@ namespace ArcaneSurvival
         {
             collected = false;
             magnetized = false;
+            age = 0f;
             ActiveOrbs.Remove(this);
         }
 
@@ -135,34 +149,65 @@ namespace ArcaneSurvival
                 return;
             }
 
-            cachedRenderer.material.color = GetTierColor(value);
-            float scale = value >= 20f ? 0.72f : value >= 8f ? 0.6f : value >= 4f ? 0.52f : 0.45f;
+            rarity = GetRarity(value);
+            Color tierColor = UpgradeRarityUtility.GetColor(rarity);
+            cachedRenderer.material.color = tierColor;
+            cachedRenderer.transform.localPosition = Vector3.zero;
+
+            float scale = rarity == UpgradeRarity.Legendary ? 0.82f
+                : rarity == UpgradeRarity.Epic ? 0.70f
+                : rarity == UpgradeRarity.Magic ? 0.60f
+                : rarity == UpgradeRarity.Uncommon ? 0.52f
+                : 0.44f;
             transform.localScale = Vector3.one * scale;
+
+            ApplyBeacon(tierColor);
         }
 
-        private static Color GetTierColor(float xpValue)
+        private void ApplyBeacon(Color tierColor)
         {
-            if (xpValue >= 35f)
+            if (beaconRenderer != null)
             {
-                return new Color(1f, 0.74f, 0.18f);
+                bool showStrongBeacon = rarity >= UpgradeRarity.Magic;
+                beaconRenderer.enabled = true;
+                beaconRenderer.startColor = new Color(tierColor.r, tierColor.g, tierColor.b, showStrongBeacon ? 0.9f : 0.45f);
+                beaconRenderer.endColor = new Color(tierColor.r, tierColor.g, tierColor.b, 0f);
+                beaconRenderer.startWidth = showStrongBeacon ? 0.08f : 0.035f;
+                beaconRenderer.endWidth = showStrongBeacon ? 0.24f : 0.08f;
             }
 
-            if (xpValue >= 16f)
+            if (beaconLight != null)
             {
-                return new Color(0.72f, 0.28f, 1f);
+                beaconLight.enabled = rarity >= UpgradeRarity.Magic;
+                beaconLight.color = tierColor;
+                beaconLight.range = rarity >= UpgradeRarity.Epic ? 7f : rarity >= UpgradeRarity.Magic ? 5f : 3f;
+                beaconLight.intensity = rarity >= UpgradeRarity.Epic ? 2.1f : rarity >= UpgradeRarity.Magic ? 1.35f : 0.65f;
+            }
+        }
+
+        private static UpgradeRarity GetRarity(float xpValue)
+        {
+            if (xpValue >= 28f)
+            {
+                return UpgradeRarity.Legendary;
+            }
+
+            if (xpValue >= 14f)
+            {
+                return UpgradeRarity.Epic;
             }
 
             if (xpValue >= 7f)
             {
-                return new Color(0.2f, 0.48f, 1f);
+                return UpgradeRarity.Magic;
             }
 
             if (xpValue >= 3f)
             {
-                return new Color(0.24f, 0.86f, 0.32f);
+                return UpgradeRarity.Uncommon;
             }
 
-            return Color.white;
+            return UpgradeRarity.Common;
         }
     }
 }

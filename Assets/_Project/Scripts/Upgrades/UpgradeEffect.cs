@@ -13,6 +13,8 @@ namespace ArcaneSurvival
         IncreaseCriticalChance,
         IncreaseCriticalDamage,
         IncreaseLuck,
+        IncreaseArmor,
+        IncreaseRegeneration,
         IncreaseChainCount,
         IncreaseChainRadius,
         UnlockNewSkill,

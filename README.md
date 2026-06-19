@@ -38,8 +38,9 @@ Controls:
 ```text
 WASD: Move
 Mouse: UI navigation
-Card choices: A / Left Arrow and D / Right Arrow move selection
-Card choices: Space or Enter confirms selection
+Menus and card choices: A / Left Arrow and D / Right Arrow move selection
+Menus and card choices: Space or Enter confirms selection
+Menus and card choices: Mouse hover updates selection, click confirms
 Esc: Pause
 Enter or Space: Start run
 ```
@@ -51,7 +52,7 @@ Gameplay:
 3. Choose one starting skill.
 4. Skills cast automatically during combat.
 5. Enemies spawn outside the camera view and chase the player.
-6. Defeated enemies drop XP orbs with value-based tier colors.
+6. Defeated enemies drop XP orbs with rarity colors and drop beacons.
 7. Collect XP by moving near orbs.
 8. Leveling up pauses the game and presents three upgrade cards.
 9. Every fifth level offers locked skill unlock cards first.
@@ -97,6 +98,18 @@ Legendary: gold
 
 The player has a `Luck` stat. Luck reduces the weight of Common upgrade rolls and gradually improves the odds of Uncommon, Magic, Epic, and Legendary cards. Legendary remains rare.
 
+XP Orbs use the same rarity color language:
+
+```text
+Common XP: white
+Uncommon XP: green
+Magic XP: blue
+Epic XP: purple
+Legendary XP: gold
+```
+
+Higher-value XP drops use stronger light beacons. Enemy XP rewards scale modestly with run time and bosses defeated so late-game leveling continues.
+
 ## Pickups
 
 Special pickups are supported through `PickupData` and `PickupType`.
@@ -105,9 +118,10 @@ Implemented pickup:
 
 ```text
 Magnet: pulls all active XP Orbs toward the player from anywhere in the run.
+Heal: restores a flat amount of HP when collected.
 ```
 
-The Magnet uses a simple runtime-built placeholder made from Unity primitives, with bobbing and pulsing motion so it reads differently from XP orbs.
+Special pickups use simple runtime-built placeholders made from Unity primitives, with bobbing, pulsing motion, and light beacons so they read differently from XP orbs.
 
 ## Breakable Objects
 

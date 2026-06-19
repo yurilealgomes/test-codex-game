@@ -1,10 +1,11 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace ArcaneSurvival
 {
-    public sealed class StartingSkillCardUI : MonoBehaviour
+    public sealed class StartingSkillCardUI : MonoBehaviour, IPointerEnterHandler
     {
         private Image background;
         private Outline outline;
@@ -12,6 +13,7 @@ namespace ArcaneSurvival
         private Text description;
         private Text element;
         private SkillData skill;
+        private Action hoverCallback;
 
         public void Build(Transform parent, int index)
         {
@@ -36,9 +38,10 @@ namespace ArcaneSurvival
             element = UIFactory.CreateText(transform, "Element", "", 13, Color.white, TextAnchor.MiddleCenter, new Vector2(0.10f, 0.06f), new Vector2(0.90f, 0.18f), Vector2.zero, Vector2.zero);
         }
 
-        public void Setup(SkillData data, Action<SkillData> onSelected)
+        public void Setup(SkillData data, Action<SkillData> onSelected, Action onHovered)
         {
             skill = data;
+            hoverCallback = onHovered;
             title.text = data.SkillName;
             description.text = data.Description;
             element.text = data.ElementTags != null && data.ElementTags.Length > 0 ? data.ElementTags[0].ToString() : "Neutral";
@@ -63,6 +66,14 @@ namespace ArcaneSurvival
             }
 
             transform.localScale = selected ? Vector3.one * 1.04f : Vector3.one;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (hoverCallback != null)
+            {
+                hoverCallback.Invoke();
+            }
         }
     }
 }

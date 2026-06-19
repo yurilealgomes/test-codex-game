@@ -39,6 +39,10 @@ namespace ArcaneSurvival
                     return "Critical Damage +" + Percent(value);
                 case UpgradeEffect.IncreaseLuck:
                     return "Luck +" + value.ToString("0.0") + " for better upgrade odds";
+                case UpgradeEffect.IncreaseArmor:
+                    return "Armor +" + value.ToString("0.0") + " damage reduction";
+                case UpgradeEffect.IncreaseRegeneration:
+                    return "Health Regeneration +" + value.ToString("0.0") + " HP per second";
                 case UpgradeEffect.IncreaseChainCount:
                     return "Lightning Chain Count +" + Mathf.Max(1, Mathf.RoundToInt(upgrade.Amount));
                 case UpgradeEffect.IncreaseChainRadius:

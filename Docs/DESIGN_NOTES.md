@@ -27,6 +27,8 @@ Endless Mode time
 
 The player should feel powerful through upgrades and synergies, while enemy density and durability keep increasing. Endless Mode increases pressure faster after the first major boss if the player chooses to continue.
 
+Player power should scale defensively as well as offensively. Armor, regeneration, healing drops, and movement upgrades are part of the answer to enemy density so late-game pressure feels dangerous without becoming unavoidable.
+
 ## Waves
 
 `WaveDirector` manages spawn cadence, batch size, wave number, elite chance, and boss timing. The first minutes are intentionally readable, then enemy batches grow until the screen becomes chaotic.
@@ -73,7 +75,11 @@ Breakable objects are generated per world chunk and avoid the visible camera are
 
 ## Special Pickups
 
-The first special pickup is `Magnet`. It pulls all active XP Orbs to the player from anywhere in the run. The pickup is rare and can drop from elites, bosses, and breakables. Its placeholder visual bobs and pulses so it feels like a special reward instead of another XP orb.
+The first special pickups are `Magnet` and `Heal`. Magnet pulls all active XP Orbs to the player from anywhere in the run. Heal restores HP during combat. Special pickups can drop from enemies, elites, bosses, and breakables, and their placeholders use light beacons, bobbing, and distinct primitive shapes.
+
+## XP Rarity
+
+XP Orbs use the same rarity language as upgrades: Common, Uncommon, Magic, Epic, and Legendary. Higher-value drops get stronger colors, larger scale, and brighter beacons. XP rewards scale slightly with elapsed time and bosses defeated so the player can keep leveling during dense late-game waves.
 
 ## HUD Readability
 
@@ -97,7 +103,7 @@ Early balance targets:
 Player HP: 100
 Player move speed: 6
 XP for level 2: 18
-XP growth: 1.32 per level
+XP growth: 1.26 per level
 First boss interval: 15 minutes
 ```
 

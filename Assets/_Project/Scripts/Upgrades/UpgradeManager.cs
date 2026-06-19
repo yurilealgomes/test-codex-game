@@ -93,6 +93,12 @@ namespace ArcaneSurvival
                 case UpgradeEffect.IncreaseLuck:
                     playerStats.Luck += upgrade.Amount * power;
                     break;
+                case UpgradeEffect.IncreaseArmor:
+                    playerStats.Armor += upgrade.Amount * power;
+                    break;
+                case UpgradeEffect.IncreaseRegeneration:
+                    playerStats.Regeneration += upgrade.Amount * power;
+                    break;
                 case UpgradeEffect.IncreaseChainCount:
                     playerStats.ExtraChainCount += Mathf.Max(1, Mathf.RoundToInt(upgrade.Amount));
                     break;

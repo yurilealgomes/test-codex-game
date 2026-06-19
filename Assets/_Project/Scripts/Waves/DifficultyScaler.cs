@@ -42,7 +42,7 @@ namespace ArcaneSurvival
 
             EnemyHpMultiplier = 1f + minutesElapsed * 0.065f + bossesDefeated * 0.25f + endlessMinutes * 0.12f;
             EnemyDamageMultiplier = 1f + minutesElapsed * 0.035f + bossesDefeated * 0.15f + endlessMinutes * 0.06f;
-            EnemySpeedMultiplier = 1f + minutesElapsed * 0.01f + endlessMinutes * 0.01f;
+            EnemySpeedMultiplier = Mathf.Min(1.48f, 1f + minutesElapsed * 0.005f + endlessMinutes * 0.006f);
             SpawnRateMultiplier = 1f + pressureMinutes * 0.08f + endlessMinutes * 0.12f;
             EliteChance = Mathf.Min(0.005f + pressureMinutes * 0.005f + endlessMinutes * 0.008f, 0.28f);
         }

@@ -46,7 +46,8 @@ namespace ArcaneSurvival
                 cards[i].gameObject.SetActive(hasUpgrade);
                 if (hasUpgrade)
                 {
-                    cards[i].Setup(upgrades[i], onSelected);
+                    int cardIndex = i;
+                    cards[i].Setup(upgrades[i], onSelected, () => SelectIndex(cardIndex));
                 }
             }
 

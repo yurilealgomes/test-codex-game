@@ -89,6 +89,17 @@ namespace ArcaneSurvival
             EventBus.RaisePlayerHealthChanged(currentHealth, stats.MaxHP);
         }
 
+        public void Heal(float amount)
+        {
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            currentHealth = Mathf.Min(stats.MaxHP, currentHealth + Mathf.Max(0f, amount));
+            EventBus.RaisePlayerHealthChanged(currentHealth, stats.MaxHP);
+        }
+
         public void SetInvulnerable(bool invulnerable)
         {
             IsInvulnerable = invulnerable;
