@@ -9,5 +9,7 @@ namespace ArcaneSurvival
         public Color SecondaryGroundColor = new Color(0.12f, 0.16f, 0.17f);
         public Color DecorationColor = new Color(0.28f, 0.32f, 0.3f);
         public int DecorationsPerChunk = 5;
+        public int BreakablesPerChunk = 7;
+        public BreakableObjectData[] BreakableObjects;
     }
 }

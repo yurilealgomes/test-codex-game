@@ -12,6 +12,7 @@ namespace ArcaneSurvival
 
         public PerformanceSettings PerformanceSettings;
         public WorldChunkData WorldChunkData;
+        public RunBalanceSettings RunBalanceSettings;
 
         public SkillData FindSkill(string skillName)
         {

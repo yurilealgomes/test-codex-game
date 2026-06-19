@@ -42,7 +42,7 @@ namespace ArcaneSurvival
             }
 
             stateManager.SetState(GameState.LevelUp);
-            levelUpPanel.Show(optionGenerator.GenerateOptions(3), ApplyUpgrade);
+            levelUpPanel.Show(optionGenerator.GenerateOptions(3, level), ApplyUpgrade);
         }
 
         private void ApplyUpgrade(UpgradeData upgrade)

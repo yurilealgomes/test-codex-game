@@ -9,6 +9,8 @@ namespace ArcaneSurvival
 
         private PoolManager poolManager;
         private PerformanceSettings performanceSettings;
+        private RunBalanceSettings balanceSettings;
+        private RunTimer runTimer;
 
         private void Awake()
         {
@@ -23,7 +25,10 @@ namespace ArcaneSurvival
             if (ServiceLocator.TryGet(out database))
             {
                 performanceSettings = database.PerformanceSettings;
+                balanceSettings = database.RunBalanceSettings;
             }
+
+            ServiceLocator.TryGet(out runTimer);
         }
 
         private void OnDestroy()
@@ -34,7 +39,7 @@ namespace ArcaneSurvival
         public void RegisterEnemyDefeated(float xpDrop, Vector3 position)
         {
             EnemiesDefeated++;
-            SpawnXp(xpDrop, position);
+            SpawnXp(GetAdjustedEnemyXp(xpDrop), position);
         }
 
         public void SpawnXp(float amount, Vector3 position)
@@ -61,6 +66,21 @@ namespace ArcaneSurvival
         private void HandleBossDefeated()
         {
             BossesDefeated++;
+        }
+
+        private float GetAdjustedEnemyXp(float xpDrop)
+        {
+            if (balanceSettings == null || runTimer == null)
+            {
+                return xpDrop;
+            }
+
+            if (runTimer.ElapsedTime < balanceSettings.RangedEnemyWeightRampStartSeconds)
+            {
+                return xpDrop * balanceSettings.EarlyXpRewardMultiplier;
+            }
+
+            return xpDrop;
         }
     }
 }

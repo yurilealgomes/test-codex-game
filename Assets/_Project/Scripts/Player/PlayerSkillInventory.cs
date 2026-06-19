@@ -8,6 +8,7 @@ namespace ArcaneSurvival
         private readonly List<SkillRuntime> skills = new List<SkillRuntime>();
 
         public IReadOnlyList<SkillRuntime> Skills { get { return skills; } }
+        public string StartingSkillName { get; private set; }
 
         private void Awake()
         {
@@ -22,6 +23,11 @@ namespace ArcaneSurvival
             }
 
             skills.Add(runtime);
+            if (string.IsNullOrEmpty(StartingSkillName))
+            {
+                StartingSkillName = runtime.Data.SkillName;
+            }
+
             EventBus.RaiseSkillInventoryChanged();
         }
 
@@ -42,6 +48,11 @@ namespace ArcaneSurvival
 
             SkillRuntime runtime = SkillFactory.CreateRuntime(data);
             skills.Add(runtime);
+            if (string.IsNullOrEmpty(StartingSkillName))
+            {
+                StartingSkillName = data.SkillName;
+            }
+
             EventBus.RaiseSkillInventoryChanged();
             return runtime;
         }
@@ -76,6 +87,11 @@ namespace ArcaneSurvival
         {
             SkillRuntime runtime = skills.Find(skill => skill.Data.SkillName == skillName);
             return runtime == null ? 0 : runtime.Level;
+        }
+
+        public bool HasSkill(string skillName)
+        {
+            return skills.Exists(skill => skill.Data.SkillName == skillName);
         }
 
         private SkillRuntime FindRuntime(SkillData data)

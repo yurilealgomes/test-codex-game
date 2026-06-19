@@ -6,8 +6,10 @@ namespace ArcaneSurvival
     public sealed class WorldChunk : MonoBehaviour
     {
         private readonly List<GameObject> decorations = new List<GameObject>();
+        private readonly List<GameObject> breakables = new List<GameObject>();
         private Renderer groundRenderer;
         private Transform decorationRoot;
+        private Transform breakableRoot;
 
         public Vector2Int Coordinate { get; private set; }
         public float Size { get; private set; }
@@ -25,6 +27,9 @@ namespace ArcaneSurvival
 
             decorationRoot = new GameObject("Decorations").transform;
             decorationRoot.SetParent(transform);
+
+            breakableRoot = new GameObject("Breakables").transform;
+            breakableRoot.SetParent(transform);
         }
 
         public void SetCoordinate(Vector2Int coordinate, WorldChunkData data)
@@ -57,11 +62,32 @@ namespace ArcaneSurvival
             return decorations[index];
         }
 
+        public GameObject GetBreakable(int index)
+        {
+            while (breakables.Count <= index)
+            {
+                GameObject breakable = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                breakable.name = "Breakable Object";
+                breakable.transform.SetParent(breakableRoot);
+                breakables.Add(breakable);
+            }
+
+            return breakables[index];
+        }
+
         public void HideDecorationsFrom(int startIndex)
         {
             for (int i = startIndex; i < decorations.Count; i++)
             {
                 decorations[i].SetActive(false);
+            }
+        }
+
+        public void HideBreakablesFrom(int startIndex)
+        {
+            for (int i = startIndex; i < breakables.Count; i++)
+            {
+                breakables[i].SetActive(false);
             }
         }
     }

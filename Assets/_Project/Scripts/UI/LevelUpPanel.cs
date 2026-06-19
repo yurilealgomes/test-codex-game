@@ -10,6 +10,8 @@ namespace ArcaneSurvival
         private readonly List<UpgradeCardUI> cards = new List<UpgradeCardUI>();
         private GameObject root;
         private Action<UpgradeData> onSelected;
+        private UpgradeData[] currentUpgrades;
+        private int selectedIndex;
 
         private void Awake()
         {
@@ -36,6 +38,7 @@ namespace ArcaneSurvival
         public void Show(UpgradeData[] upgrades, Action<UpgradeData> selectedCallback)
         {
             onSelected = selectedCallback;
+            currentUpgrades = upgrades;
             root.SetActive(true);
             for (int i = 0; i < cards.Count; i++)
             {
@@ -46,6 +49,8 @@ namespace ArcaneSurvival
                     cards[i].Setup(upgrades[i], onSelected);
                 }
             }
+
+            SelectIndex(0);
         }
 
         public void Hide()
@@ -53,6 +58,61 @@ namespace ArcaneSurvival
             if (root != null)
             {
                 root.SetActive(false);
+            }
+        }
+
+        private void Update()
+        {
+            if (root == null || !root.activeSelf || currentUpgrades == null || currentUpgrades.Length == 0)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                SelectIndex(0);
+            }
+            else if (Input.GetKeyDown(KeyCode.S))
+            {
+                SelectIndex(1);
+            }
+            else if (Input.GetKeyDown(KeyCode.D))
+            {
+                SelectIndex(2);
+            }
+            else if (Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                SelectIndex(selectedIndex - 1);
+            }
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                SelectIndex(selectedIndex + 1);
+            }
+            else if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+            {
+                ConfirmSelection();
+            }
+        }
+
+        private void SelectIndex(int index)
+        {
+            if (currentUpgrades == null || currentUpgrades.Length == 0)
+            {
+                return;
+            }
+
+            selectedIndex = Mathf.Clamp(index, 0, currentUpgrades.Length - 1);
+            for (int i = 0; i < cards.Count; i++)
+            {
+                cards[i].SetSelected(i == selectedIndex && i < currentUpgrades.Length);
+            }
+        }
+
+        private void ConfirmSelection()
+        {
+            if (onSelected != null && selectedIndex >= 0 && selectedIndex < currentUpgrades.Length)
+            {
+                onSelected.Invoke(currentUpgrades[selectedIndex]);
             }
         }
     }

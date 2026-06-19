@@ -4,8 +4,8 @@ namespace ArcaneSurvival
 {
     public sealed class PlayerExperience : MonoBehaviour
     {
-        [SerializeField] private float baseRequiredXp = 10f;
-        [SerializeField] private float levelGrowth = 1.25f;
+        [SerializeField] private float baseRequiredXp = 18f;
+        [SerializeField] private float levelGrowth = 1.32f;
 
         private float currentXp;
 
@@ -20,6 +20,14 @@ namespace ArcaneSurvival
 
         private void Start()
         {
+            GameDatabase database;
+            if (ServiceLocator.TryGet(out database) && database.RunBalanceSettings != null)
+            {
+                baseRequiredXp = database.RunBalanceSettings.BaseRequiredXp;
+                levelGrowth = database.RunBalanceSettings.XpGrowthMultiplier;
+                RequiredXp = baseRequiredXp;
+            }
+
             EventBus.RaisePlayerExperienceChanged(Level, currentXp, RequiredXp);
         }
 

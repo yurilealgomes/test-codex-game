@@ -7,6 +7,7 @@ namespace ArcaneSurvival
         private GameObject root;
         private GameManager gameManager;
         private GameStateManager stateManager;
+        private StartingSkillSelectionPanel startingSkillSelectionPanel;
 
         private void Awake()
         {
@@ -17,6 +18,7 @@ namespace ArcaneSurvival
         {
             ServiceLocator.TryGet(out gameManager);
             ServiceLocator.TryGet(out stateManager);
+            ServiceLocator.TryGet(out startingSkillSelectionPanel);
             Canvas canvas = ServiceLocator.Get<Canvas>();
             root = UIFactory.CreatePanel(canvas.transform, "Start Screen", new Color(0.025f, 0.03f, 0.04f, 0.96f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).gameObject;
             UIFactory.CreateText(root.transform, "Title", "Arcane Survival", 46, Color.white, TextAnchor.MiddleCenter, new Vector2(0.25f, 0.57f), new Vector2(0.75f, 0.71f), Vector2.zero, Vector2.zero);
@@ -26,7 +28,7 @@ namespace ArcaneSurvival
 
         private void Update()
         {
-            if (stateManager != null && stateManager.CurrentState == GameState.MainMenu && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)))
+            if (root != null && root.activeSelf && stateManager != null && stateManager.CurrentState == GameState.MainMenu && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space)))
             {
                 StartRun();
             }
@@ -41,7 +43,14 @@ namespace ArcaneSurvival
 
             if (gameManager != null)
             {
-                gameManager.StartRun();
+                if (startingSkillSelectionPanel != null)
+                {
+                    startingSkillSelectionPanel.Show(gameManager.StartRunWithSkill);
+                }
+                else
+                {
+                    gameManager.StartRun();
+                }
             }
         }
     }

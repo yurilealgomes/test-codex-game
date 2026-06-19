@@ -4,7 +4,7 @@ namespace ArcaneSurvival
 {
     public sealed class WaveDirector : MonoBehaviour
     {
-        [SerializeField] private float bossIntervalSeconds = 300f;
+        [SerializeField] private float bossIntervalSeconds = 900f;
         [SerializeField] private int maxAliveEnemies = 350;
 
         private GameDatabase database;
@@ -14,6 +14,7 @@ namespace ArcaneSurvival
         private GameStateManager stateManager;
         private float spawnTimer;
         private float nextBossTime;
+        private RunBalanceSettings balanceSettings;
 
         public int CurrentWave { get; private set; } = 1;
 
@@ -33,6 +34,14 @@ namespace ArcaneSurvival
             if (database != null && database.PerformanceSettings != null)
             {
                 maxAliveEnemies = database.PerformanceSettings.MaxAliveEnemies;
+            }
+
+            if (database != null && database.RunBalanceSettings != null)
+            {
+                balanceSettings = database.RunBalanceSettings;
+                bossIntervalSeconds = balanceSettings.BossIntervalSeconds;
+                nextBossTime = balanceSettings.FirstBossTimeSeconds;
+                return;
             }
 
             nextBossTime = bossIntervalSeconds;
@@ -66,15 +75,50 @@ namespace ArcaneSurvival
                 return;
             }
 
-            int batchSize = Mathf.Clamp(2 + CurrentWave + Mathf.FloorToInt(runTimer.MinutesElapsed), 2, 18);
+            int baseBatchSize = balanceSettings != null ? balanceSettings.BaseBatchSize : 2;
+            int maxBatchSize = balanceSettings != null ? balanceSettings.MaxBatchSize : 18;
+            int batchSize = Mathf.Clamp(baseBatchSize + Mathf.FloorToInt(CurrentWave * 0.65f) + Mathf.FloorToInt(runTimer.MinutesElapsed * 0.5f), 2, maxBatchSize);
             for (int i = 0; i < batchSize && EnemyController.ActiveEnemies.Count < maxAliveEnemies; i++)
             {
-                EnemyData data = WeightedRandom.Pick(database.Enemies, enemy => enemy.Weight);
+                EnemyData data = WeightedRandom.Pick(database.Enemies, GetSpawnWeight);
+                if (data == null)
+                {
+                    continue;
+                }
+
                 bool elite = Random.value <= (difficultyScaler != null ? difficultyScaler.EliteChance : 0.02f);
                 spawnDirector.SpawnEnemy(data, elite);
             }
 
-            spawnTimer = Mathf.Max(0.12f, 1.4f - runTimer.MinutesElapsed * 0.06f);
+            float baseInterval = balanceSettings != null ? balanceSettings.BaseSpawnInterval : 1.4f;
+            float minimumInterval = balanceSettings != null ? balanceSettings.MinimumSpawnInterval : 0.12f;
+            float reduction = balanceSettings != null ? balanceSettings.SpawnIntervalReductionPerMinute : 0.06f;
+            spawnTimer = Mathf.Max(minimumInterval, baseInterval - runTimer.MinutesElapsed * reduction);
+        }
+
+        private float GetSpawnWeight(EnemyData enemy)
+        {
+            if (enemy == null)
+            {
+                return 0f;
+            }
+
+            if (enemy.AttackType != EnemyAttackType.Ranged || balanceSettings == null)
+            {
+                return enemy.Weight;
+            }
+
+            if (runTimer.ElapsedTime < balanceSettings.RangedEnemyUnlockTimeSeconds)
+            {
+                return 0f;
+            }
+
+            float rampDuration = Mathf.Max(1f, balanceSettings.RangedEnemyWeightRampStartSeconds - balanceSettings.RangedEnemyUnlockTimeSeconds);
+            float earlyRamp = Mathf.Clamp01((runTimer.ElapsedTime - balanceSettings.RangedEnemyUnlockTimeSeconds) / rampDuration);
+            float lateRamp = runTimer.ElapsedTime >= balanceSettings.RangedEnemyWeightRampStartSeconds
+                ? Mathf.Clamp01((runTimer.ElapsedTime - balanceSettings.RangedEnemyWeightRampStartSeconds) / 240f)
+                : 0f;
+            return enemy.Weight * Mathf.Lerp(0.18f, 1f, Mathf.Max(earlyRamp * 0.65f, lateRamp));
         }
 
         private void TrySpawnBoss()

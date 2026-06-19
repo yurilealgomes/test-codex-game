@@ -50,6 +50,7 @@ namespace ArcaneSurvival
             systems.AddComponent<PauseMenu>();
             systems.AddComponent<GameOverPanel>();
             systems.AddComponent<MainMenu>();
+            systems.AddComponent<StartingSkillSelectionPanel>();
             systems.AddComponent<BossWarningUI>();
             systems.AddComponent<BossHealthBar>();
             systems.AddComponent<SynergyNotificationUI>();
@@ -91,13 +92,11 @@ namespace ArcaneSurvival
             player.AddComponent<PlayerVisualController>();
             player.AddComponent<PlayerHealth>();
             player.AddComponent<PlayerExperience>();
-            PlayerSkillInventory inventory = player.AddComponent<PlayerSkillInventory>();
+            player.AddComponent<PlayerSkillInventory>();
             player.AddComponent<PlayerCollector>();
             player.AddComponent<PlayerController>();
             player.AddComponent<SkillCaster>();
 
-            inventory.AddStartingSkill(SkillFactory.CreateRuntime(database.FindSkill("Arcane Bolt")));
-            inventory.AddStartingSkill(SkillFactory.CreateRuntime(database.FindSkill("Flame Orbit")));
             stats.MaxHP = 100f;
             return player;
         }
@@ -106,7 +105,7 @@ namespace ArcaneSurvival
         {
             GameObject cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
             cameraObject.tag = "MainCamera";
-            cameraObject.transform.position = target.position + new Vector3(0f, 22f, -22f);
+            cameraObject.transform.position = target.position + new Vector3(-10f, 15f, -10f);
             cameraObject.transform.rotation = Quaternion.Euler(45f, 45f, 0f);
 
             Camera camera = cameraObject.GetComponent<Camera>();
@@ -136,8 +135,8 @@ namespace ArcaneSurvival
 
             poolManager.RegisterPool("Enemy", CreateEnemyPrefab(prefabRoot.transform), 80, database.PerformanceSettings.MaxAliveEnemies);
             poolManager.RegisterPool("Boss", CreateBossPrefab(prefabRoot.transform), 2, 8);
-            poolManager.RegisterPool("PlayerProjectile", CreateProjectilePrefab(prefabRoot.transform, "Player Projectile Prefab", new Color(0.75f, 0.24f, 1f), 0.34f), 80, database.PerformanceSettings.MaxAliveProjectiles);
-            poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.25f, 0.18f), 0.38f), 40, 180);
+            poolManager.RegisterPool("PlayerProjectile", CreateProjectilePrefab(prefabRoot.transform, "Player Projectile Prefab", new Color(0.32f, 0.68f, 1f), 0.34f), 80, database.PerformanceSettings.MaxAliveProjectiles);
+            poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.14f, 0.05f), 0.38f), 40, 180);
             poolManager.RegisterPool("XPOrb", CreateXpOrbPrefab(prefabRoot.transform), 80, 500);
             poolManager.RegisterPool("FloatingDamageText", CreateFloatingTextPrefab(prefabRoot.transform), 24, database.PerformanceSettings.MaxFloatingDamageTexts);
             poolManager.RegisterPool("AreaDamage", CreateAreaDamagePrefab(prefabRoot.transform), 24, 160);
@@ -230,6 +229,7 @@ namespace ArcaneSurvival
         {
             GameDatabase database = new GameDatabase();
             database.PerformanceSettings = ScriptableObject.CreateInstance<PerformanceSettings>();
+            database.RunBalanceSettings = new RunBalanceSettings();
             database.WorldChunkData = CreateWorldChunkData();
             CreateSkills(database);
             CreateEnemies(database);
@@ -245,7 +245,26 @@ namespace ArcaneSurvival
             data.PrimaryGroundColor = new Color(0.14f, 0.20f, 0.18f);
             data.SecondaryGroundColor = new Color(0.11f, 0.16f, 0.18f);
             data.DecorationColor = new Color(0.26f, 0.30f, 0.29f);
-            data.DecorationsPerChunk = 5;
+            data.DecorationsPerChunk = 6;
+            data.BreakablesPerChunk = 7;
+            data.BreakableObjects = new[]
+            {
+                CreateBreakableData("Arcane Crystal", 24f, 2f, new Color(0.34f, 0.74f, 1f), new Vector3(0.36f, 0.85f, 0.36f), new Vector3(0.68f, 1.55f, 0.68f)),
+                CreateBreakableData("Rune Stone", 34f, 3f, new Color(0.48f, 0.42f, 0.34f), new Vector3(0.55f, 0.45f, 0.55f), new Vector3(1f, 0.85f, 1f)),
+                CreateBreakableData("Small Relic Pillar", 45f, 4f, new Color(0.52f, 0.38f, 0.78f), new Vector3(0.45f, 0.9f, 0.45f), new Vector3(0.8f, 1.8f, 0.8f))
+            };
+            return data;
+        }
+
+        private static BreakableObjectData CreateBreakableData(string name, float health, float xpDrop, Color color, Vector3 minScale, Vector3 maxScale)
+        {
+            BreakableObjectData data = ScriptableObject.CreateInstance<BreakableObjectData>();
+            data.ObjectName = name;
+            data.MaxHealth = health;
+            data.XpDrop = xpDrop;
+            data.BaseColor = color;
+            data.MinScale = minScale;
+            data.MaxScale = maxScale;
             return data;
         }
 
@@ -347,12 +366,18 @@ namespace ArcaneSurvival
             AddUpgrade(database, "Vital Ward", "Increase maximum health and heal fully.", UpgradeRarity.Rare, UpgradeEffect.IncreaseMaxHP, 22f, "", "Player");
             AddUpgrade(database, "Keen Arcana", "Increase critical chance.", UpgradeRarity.Rare, UpgradeEffect.IncreaseCriticalChance, 0.04f, "", "Player");
             AddUpgrade(database, "Ruinous Crits", "Increase critical damage.", UpgradeRarity.Epic, UpgradeEffect.IncreaseCriticalDamage, 0.28f, "", "Player");
+            AddUpgrade(database, "Learn Arcane Bolt", "Unlock Arcane Bolt.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Arcane Bolt", "Arcane Bolt");
+            AddUpgrade(database, "Learn Flame Orbit", "Unlock Flame Orbit.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Flame Orbit", "Flame Orbit");
             AddUpgrade(database, "Learn Ice Nova", "Unlock Ice Nova.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Ice Nova", "Ice Nova");
             AddUpgrade(database, "Learn Lightning Chain", "Unlock Lightning Chain.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Lightning Chain", "Lightning Chain");
             AddUpgrade(database, "Learn Void Zone", "Unlock Void Zone.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Void Zone", "Void Zone");
             AddUpgrade(database, "Learn Nature Spikes", "Unlock Nature Spikes.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Nature Spikes", "Nature Spikes");
             AddUpgrade(database, "Arcane Bolt Mastery", "Upgrade Arcane Bolt.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Arcane Bolt", "Arcane Bolt");
             AddUpgrade(database, "Flame Orbit Mastery", "Upgrade Flame Orbit.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Flame Orbit", "Flame Orbit");
+            AddUpgrade(database, "Ice Nova Mastery", "Upgrade Ice Nova.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Ice Nova", "Ice Nova");
+            AddUpgrade(database, "Lightning Chain Mastery", "Upgrade Lightning Chain.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Lightning Chain", "Lightning Chain");
+            AddUpgrade(database, "Void Zone Mastery", "Upgrade Void Zone.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Void Zone", "Void Zone");
+            AddUpgrade(database, "Nature Spikes Mastery", "Upgrade Nature Spikes.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Nature Spikes", "Nature Spikes");
             AddUpgrade(database, "Elemental Convergence", "Strengthen elemental synergies.", UpgradeRarity.Legendary, UpgradeEffect.ActivateOrStrengthenSynergy, 0.18f, "Lightning Chain", "Synergy");
         }
 

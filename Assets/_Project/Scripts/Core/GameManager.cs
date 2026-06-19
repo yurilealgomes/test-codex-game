@@ -39,6 +39,17 @@ namespace ArcaneSurvival
             EventBus.RaiseRunStarted();
         }
 
+        public void StartRunWithSkill(SkillData startingSkill)
+        {
+            PlayerSkillInventory inventory;
+            if (ServiceLocator.TryGet(out inventory))
+            {
+                inventory.UnlockSkill(startingSkill);
+            }
+
+            StartRun();
+        }
+
         public void ResumeRun()
         {
             stateManager.SetState(GameState.Playing);

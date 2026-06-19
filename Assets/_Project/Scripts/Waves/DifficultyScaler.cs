@@ -12,6 +12,7 @@ namespace ArcaneSurvival
 
         private RunTimer runTimer;
         private RunProgressionManager progressionManager;
+        private RunBalanceSettings balanceSettings;
 
         private void Awake()
         {
@@ -22,6 +23,12 @@ namespace ArcaneSurvival
         {
             ServiceLocator.TryGet(out runTimer);
             ServiceLocator.TryGet(out progressionManager);
+
+            GameDatabase database;
+            if (ServiceLocator.TryGet(out database))
+            {
+                balanceSettings = database.RunBalanceSettings;
+            }
         }
 
         private void Update()
@@ -29,11 +36,11 @@ namespace ArcaneSurvival
             float minutesElapsed = runTimer != null ? runTimer.MinutesElapsed : 0f;
             int bossesDefeated = progressionManager != null ? progressionManager.BossesDefeated : 0;
 
-            EnemyHpMultiplier = 1f + minutesElapsed * 0.12f + bossesDefeated * 0.25f;
-            EnemyDamageMultiplier = 1f + minutesElapsed * 0.06f + bossesDefeated * 0.15f;
-            EnemySpeedMultiplier = 1f + minutesElapsed * 0.02f;
-            SpawnRateMultiplier = 1f + minutesElapsed * 0.08f;
-            EliteChance = Mathf.Min(0.02f + minutesElapsed * 0.005f, 0.25f);
+            EnemyHpMultiplier = 1f + minutesElapsed * 0.08f + bossesDefeated * 0.25f;
+            EnemyDamageMultiplier = 1f + minutesElapsed * 0.04f + bossesDefeated * 0.15f;
+            EnemySpeedMultiplier = 1f + minutesElapsed * 0.015f;
+            SpawnRateMultiplier = 1f + minutesElapsed * 0.055f;
+            EliteChance = Mathf.Min(0.01f + minutesElapsed * 0.004f, 0.22f);
         }
     }
 }

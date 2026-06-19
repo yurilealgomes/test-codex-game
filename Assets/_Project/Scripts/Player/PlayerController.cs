@@ -7,9 +7,14 @@ namespace ArcaneSurvival
     {
         private PlayerStats stats;
         private GameStateManager stateManager;
+        private Camera mainCamera;
         private Vector3 velocity;
 
         public Vector3 MoveDirection { get; private set; }
+
+        [SerializeField] private float acceleration = 28f;
+        [SerializeField] private float deceleration = 34f;
+        [SerializeField] private float rotationSpeed = 14f;
 
         private void Awake()
         {
@@ -20,6 +25,7 @@ namespace ArcaneSurvival
         private void Start()
         {
             ServiceLocator.TryGet(out stateManager);
+            mainCamera = Camera.main;
         }
 
         private void Update()
@@ -38,15 +44,43 @@ namespace ArcaneSurvival
             if (Input.GetKey(KeyCode.W)) vertical += 1f;
 
             Vector3 input = new Vector3(horizontal, 0f, vertical);
-            MoveDirection = input.sqrMagnitude > 1f ? input.normalized : input;
-            velocity = MoveDirection * stats.MoveSpeed;
+            input = input.sqrMagnitude > 1f ? input.normalized : input;
+
+            Vector3 desiredDirection = GetCameraRelativeDirection(input);
+            Vector3 desiredVelocity = desiredDirection * stats.MoveSpeed;
+            float smoothing = desiredDirection.sqrMagnitude > 0.001f ? acceleration : deceleration;
+            velocity = Vector3.MoveTowards(velocity, desiredVelocity, smoothing * Time.deltaTime);
+            MoveDirection = velocity.sqrMagnitude > 0.001f ? velocity.normalized : Vector3.zero;
             transform.position += velocity * Time.deltaTime;
 
             if (MoveDirection.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(MoveDirection, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 12f);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
             }
+        }
+
+        private Vector3 GetCameraRelativeDirection(Vector3 input)
+        {
+            if (input.sqrMagnitude <= 0.001f)
+            {
+                return Vector3.zero;
+            }
+
+            if (mainCamera == null)
+            {
+                mainCamera = Camera.main;
+            }
+
+            if (mainCamera == null)
+            {
+                return input.normalized;
+            }
+
+            Vector3 screenRight = MathUtils.Flatten(mainCamera.transform.right).normalized;
+            Vector3 screenUp = MathUtils.Flatten(mainCamera.transform.up).normalized;
+            Vector3 direction = screenRight * input.x + screenUp * input.z;
+            return direction.sqrMagnitude > 1f ? direction.normalized : direction;
         }
     }
 }

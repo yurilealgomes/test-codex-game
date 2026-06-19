@@ -1,10 +1,20 @@
-using System;
 using UnityEngine;
 
 namespace ArcaneSurvival
 {
     public sealed class WorldDecorationSpawner : MonoBehaviour
     {
+        private BreakableObjectSpawner breakableSpawner;
+
+        private void Awake()
+        {
+            breakableSpawner = GetComponent<BreakableObjectSpawner>();
+            if (breakableSpawner == null)
+            {
+                breakableSpawner = gameObject.AddComponent<BreakableObjectSpawner>();
+            }
+        }
+
         public void Populate(WorldChunk chunk, WorldChunkData data)
         {
             if (chunk == null || data == null)
@@ -38,6 +48,32 @@ namespace ArcaneSurvival
             }
 
             chunk.HideDecorationsFrom(data.DecorationsPerChunk);
+            PopulateBreakables(chunk, data, random);
+        }
+
+        private void PopulateBreakables(WorldChunk chunk, WorldChunkData data, System.Random random)
+        {
+            if (data.BreakableObjects == null || data.BreakableObjects.Length == 0)
+            {
+                chunk.HideBreakablesFrom(0);
+                return;
+            }
+
+            for (int i = 0; i < data.BreakablesPerChunk; i++)
+            {
+                GameObject breakableObject = chunk.GetBreakable(i);
+                breakableObject.SetActive(true);
+
+                BreakableObjectData objectData = data.BreakableObjects[random.Next(0, data.BreakableObjects.Length)];
+                float x = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                float z = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+
+                breakableObject.transform.localPosition = new Vector3(x, 0.48f, z);
+                breakableObject.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
+                breakableSpawner.Configure(breakableObject, objectData, random);
+            }
+
+            chunk.HideBreakablesFrom(data.BreakablesPerChunk);
         }
     }
 }

@@ -5,9 +5,9 @@ namespace ArcaneSurvival
     [RequireComponent(typeof(Camera))]
     public sealed class IsometricCameraFollow : MonoBehaviour
     {
-        [SerializeField] private Vector3 offset = new Vector3(0f, 22f, -22f);
-        [SerializeField] private float followSmoothness = 8f;
-        [SerializeField] private float zoom = 18f;
+        [SerializeField] private Vector3 offset = new Vector3(-10f, 15f, -10f);
+        [SerializeField] private float followSmoothness = 9.5f;
+        [SerializeField] private float zoom = 12.5f;
         [SerializeField] private bool useOrthographic = true;
 
         private Transform target;
@@ -48,7 +48,7 @@ namespace ArcaneSurvival
 
         public void SetZoom(float value)
         {
-            zoom = Mathf.Clamp(value, 10f, 28f);
+            zoom = Mathf.Clamp(value, 8f, 28f);
             if (cachedCamera != null)
             {
                 cachedCamera.orthographicSize = zoom;

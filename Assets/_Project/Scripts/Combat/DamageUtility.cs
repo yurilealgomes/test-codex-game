@@ -29,7 +29,12 @@ namespace ArcaneSurvival
             }
 
             BossController bossController = collider.GetComponentInParent<BossController>();
-            return bossController;
+            if (bossController != null)
+            {
+                return bossController;
+            }
+
+            return collider.GetComponentInParent<BreakableObject>();
         }
     }
 }
