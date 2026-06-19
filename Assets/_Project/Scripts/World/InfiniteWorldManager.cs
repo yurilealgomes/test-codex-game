@@ -10,6 +10,7 @@ namespace ArcaneSurvival
 
         private readonly List<WorldChunk> chunks = new List<WorldChunk>();
         private readonly HashSet<string> brokenBreakables = new HashSet<string>();
+        private readonly Dictionary<string, BreakablePlacement> breakablePlacements = new Dictionary<string, BreakablePlacement>();
         private Transform player;
         private Vector2Int currentCenter;
         private WorldChunkData chunkData;
@@ -103,6 +104,25 @@ namespace ArcaneSurvival
             }
         }
 
+        public bool TryGetBreakablePlacement(string breakableKey, out BreakablePlacement placement)
+        {
+            if (string.IsNullOrEmpty(breakableKey))
+            {
+                placement = default(BreakablePlacement);
+                return false;
+            }
+
+            return breakablePlacements.TryGetValue(breakableKey, out placement);
+        }
+
+        public void StoreBreakablePlacement(string breakableKey, BreakablePlacement placement)
+        {
+            if (!string.IsNullOrEmpty(breakableKey))
+            {
+                breakablePlacements[breakableKey] = placement;
+            }
+        }
+
         public string GetBreakableKey(Vector2Int coordinate, int slotIndex)
         {
             return coordinate.x + ":" + coordinate.y + ":" + slotIndex;
@@ -154,6 +174,15 @@ namespace ArcaneSurvival
                     Gizmos.DrawWireCube(chunk.transform.position, new Vector3(chunk.Size, 0.2f, chunk.Size));
                 }
             }
+        }
+
+        public struct BreakablePlacement
+        {
+            public int DataIndex;
+            public Vector3 LocalPosition;
+            public float Yaw;
+            public float ScaleRoll;
+            public float Tint;
         }
     }
 }

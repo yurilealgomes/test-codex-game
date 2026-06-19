@@ -69,20 +69,18 @@ namespace ArcaneSurvival
                     continue;
                 }
 
-                BreakableObjectData objectData = data.BreakableObjects[random.Next(0, data.BreakableObjects.Length)];
-                Vector3 localPosition = Vector3.zero;
+                InfiniteWorldManager.BreakablePlacement placement;
                 bool validPosition = false;
-                int attempts = Mathf.Max(1, data.BreakablePlacementAttempts);
-                for (int attempt = 0; attempt < attempts; attempt++)
+                if (worldManager != null && worldManager.TryGetBreakablePlacement(breakableKey, out placement))
                 {
-                    float x = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
-                    float z = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
-                    localPosition = new Vector3(x, 0.48f, z);
-                    Vector3 worldPosition = chunk.transform.TransformPoint(localPosition);
-                    if (worldManager == null || worldManager.IsSafeBreakablePosition(worldPosition, data))
+                    validPosition = IsPlacementValidForData(placement, data);
+                }
+                else
+                {
+                    placement = CreatePlacement(chunk, data, random, worldManager, out validPosition);
+                    if (validPosition && worldManager != null)
                     {
-                        validPosition = true;
-                        break;
+                        worldManager.StoreBreakablePlacement(breakableKey, placement);
                     }
                 }
 
@@ -92,13 +90,50 @@ namespace ArcaneSurvival
                     continue;
                 }
 
+                BreakableObjectData objectData = data.BreakableObjects[placement.DataIndex];
                 breakableObject.SetActive(true);
-                breakableObject.transform.localPosition = localPosition;
-                breakableObject.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
-                breakableSpawner.Configure(breakableObject, objectData, random, breakableKey, worldManager);
+                breakableObject.transform.localPosition = placement.LocalPosition;
+                breakableObject.transform.rotation = Quaternion.Euler(0f, placement.Yaw, 0f);
+                breakableSpawner.Configure(breakableObject, objectData, placement.ScaleRoll, placement.Tint, breakableKey, worldManager);
             }
 
             chunk.HideBreakablesFrom(data.BreakablesPerChunk);
+        }
+
+        private InfiniteWorldManager.BreakablePlacement CreatePlacement(WorldChunk chunk, WorldChunkData data, System.Random random, InfiniteWorldManager worldManager, out bool validPosition)
+        {
+            InfiniteWorldManager.BreakablePlacement placement = new InfiniteWorldManager.BreakablePlacement
+            {
+                DataIndex = random.Next(0, data.BreakableObjects.Length),
+                ScaleRoll = (float)random.NextDouble(),
+                Tint = 0.85f + (float)random.NextDouble() * 0.3f,
+                Yaw = (float)random.NextDouble() * 360f
+            };
+
+            validPosition = false;
+            int attempts = Mathf.Max(1, data.BreakablePlacementAttempts);
+            for (int attempt = 0; attempt < attempts; attempt++)
+            {
+                float x = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                float z = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                placement.LocalPosition = new Vector3(x, 0.48f, z);
+                Vector3 worldPosition = chunk.transform.TransformPoint(placement.LocalPosition);
+                if (worldManager == null || worldManager.IsSafeBreakablePosition(worldPosition, data))
+                {
+                    validPosition = true;
+                    break;
+                }
+            }
+
+            return placement;
+        }
+
+        private bool IsPlacementValidForData(InfiniteWorldManager.BreakablePlacement placement, WorldChunkData data)
+        {
+            return data != null
+                && data.BreakableObjects != null
+                && placement.DataIndex >= 0
+                && placement.DataIndex < data.BreakableObjects.Length;
         }
     }
 }

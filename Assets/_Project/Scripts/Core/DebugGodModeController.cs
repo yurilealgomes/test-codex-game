@@ -39,18 +39,7 @@ namespace ArcaneSurvival
 
         private void Start()
         {
-            ServiceLocator.TryGet(out playerHealth);
-            ServiceLocator.TryGet(out playerExperience);
-            ServiceLocator.TryGet(out skillInventory);
-            ServiceLocator.TryGet(out database);
-            ServiceLocator.TryGet(out waveDirector);
-
-            PlayerController playerController;
-            if (ServiceLocator.TryGet(out playerController))
-            {
-                playerTransform = playerController.transform;
-            }
-
+            RefreshReferences();
             CreateOverlay();
             RefreshOverlay();
         }
@@ -92,7 +81,7 @@ namespace ArcaneSurvival
                 AddXp();
             }
 
-            if (Input.GetKeyDown(KeyCode.F7))
+            if (Input.GetKeyDown(KeyCode.F7) || Input.GetKeyDown(KeyCode.G))
             {
                 SetGodMode(!GodModeEnabled);
             }
@@ -124,10 +113,12 @@ namespace ArcaneSurvival
             }
 
             TickInfiniteXp();
+            TickGodMode();
         }
 
         private void SetGodMode(bool enabled)
         {
+            RefreshReferences();
             GodModeEnabled = enabled;
             if (playerHealth != null)
             {
@@ -135,6 +126,21 @@ namespace ArcaneSurvival
             }
 
             RefreshOverlay();
+        }
+
+        private void RefreshReferences()
+        {
+            ServiceLocator.TryGet(out playerHealth);
+            ServiceLocator.TryGet(out playerExperience);
+            ServiceLocator.TryGet(out skillInventory);
+            ServiceLocator.TryGet(out database);
+            ServiceLocator.TryGet(out waveDirector);
+
+            PlayerController playerController;
+            if (ServiceLocator.TryGet(out playerController))
+            {
+                playerTransform = playerController.transform;
+            }
         }
 
         private void AddXp()
@@ -248,6 +254,11 @@ namespace ArcaneSurvival
         {
             if (!InfiniteXpEnabled || playerExperience == null)
             {
+                if (InfiniteXpEnabled)
+                {
+                    RefreshReferences();
+                }
+
                 return;
             }
 
@@ -256,6 +267,24 @@ namespace ArcaneSurvival
             {
                 playerExperience.AddExperience(Mathf.Max(2f, playerExperience.RequiredXp * 0.08f));
                 infiniteXpTimer = 0.35f;
+            }
+        }
+
+        private void TickGodMode()
+        {
+            if (!GodModeEnabled)
+            {
+                return;
+            }
+
+            if (playerHealth == null)
+            {
+                RefreshReferences();
+            }
+
+            if (playerHealth != null && !playerHealth.IsInvulnerable)
+            {
+                playerHealth.SetInvulnerable(true);
             }
         }
 
@@ -270,7 +299,7 @@ namespace ArcaneSurvival
             titleText = UIFactory.CreateText(canvas.transform, "Debug Powers Title", "Debug Powers", 16, new Color(0.85f, 1f, 0.9f), TextAnchor.UpperLeft, new Vector2(0.012f, 0.60f), new Vector2(0.31f, 0.64f), Vector2.zero, Vector2.zero);
             string[] names =
             {
-                "God Mode",
+                "God Mode (F7/G)",
                 "No Cooldowns",
                 "Infinite XP",
                 "Spawn Debug",
@@ -304,7 +333,7 @@ namespace ArcaneSurvival
                 statusLines[i].gameObject.SetActive(OverlayVisible);
             }
 
-            SetLine(0, "God Mode", GodModeEnabled);
+            SetLine(0, "God Mode (F7/G)", GodModeEnabled);
             SetLine(1, "No Cooldowns", NoCooldownsEnabled);
             SetLine(2, "Infinite XP", InfiniteXpEnabled);
             SetLine(3, "Spawn Debug", SpawnDebugEnabled);

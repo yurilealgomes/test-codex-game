@@ -46,9 +46,19 @@ namespace ArcaneSurvival
                 return;
             }
 
-            if (IsInvulnerable)
+            DebugGodModeController debugTools;
+            bool debugInvulnerable = ServiceLocator.TryGet(out debugTools) && debugTools.GodModeEnabled;
+            if (IsInvulnerable || debugInvulnerable)
             {
-                EventBus.RaisePlayerHealthChanged(currentHealth, stats.MaxHP);
+                if (debugInvulnerable && !IsInvulnerable)
+                {
+                    SetInvulnerable(true);
+                }
+                else
+                {
+                    EventBus.RaisePlayerHealthChanged(currentHealth, stats.MaxHP);
+                }
+
                 return;
             }
 

@@ -100,6 +100,8 @@ Camera viewport margin
 Chunk coordinate and slot persistence
 ```
 
+Once a breakable slot receives a valid placement, its local position, object variant, rotation, scale roll, and tint are cached by chunk coordinate and slot. Later chunk refreshes reuse that cached placement instead of rechecking the current camera/player distance, which prevents discovered breakables from disappearing as the player approaches.
+
 ## Off-Screen Spawn
 
 `SpawnRingCalculator` generates spawn positions in a ring around the player and validates camera viewport space. If all attempts fail, it still falls back to the configured ring to keep wave pressure consistent.
@@ -146,7 +148,7 @@ F3: Toggle Infinite XP
 F4: Toggle Spawn Debug
 F5: Toggle Chunk Debug
 F6: Add XP
-F7: Toggle God Mode
+F7 or G: Toggle God Mode
 F8: Force Level Up
 F9: Spawn Boss
 F10: Clear Enemies

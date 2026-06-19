@@ -73,7 +73,7 @@ F3: Toggle Infinite XP
 F4: Toggle Spawn Debug
 F5: Toggle Chunk Debug
 F6: Add XP
-F7: Toggle God Mode
+F7 or G: Toggle God Mode
 F8: Force Level Up
 F9: Spawn Boss
 F10: Clear Enemies
