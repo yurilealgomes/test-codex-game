@@ -14,7 +14,11 @@ namespace ArcaneSurvival
             {
                 if (cachedFont == null)
                 {
-                    cachedFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    cachedFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                    if (cachedFont == null)
+                    {
+                        cachedFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    }
                 }
 
                 return cachedFont;
