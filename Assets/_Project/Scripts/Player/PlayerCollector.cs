@@ -34,6 +34,12 @@ namespace ArcaneSurvival
                 {
                     orb.Collect(experience);
                 }
+
+                SpecialPickup pickup = hits[i].GetComponentInParent<SpecialPickup>();
+                if (pickup != null)
+                {
+                    pickup.Collect();
+                }
             }
         }
     }

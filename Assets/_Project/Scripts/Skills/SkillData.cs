@@ -43,6 +43,8 @@ namespace ArcaneSurvival
         public float Duration = 1f;
         public int ProjectileCount = 1;
         public float ProjectileSpeed = 14f;
+        public int ChainCount = 3;
+        public float ChainRadius = 8f;
         public bool CanCrit = true;
         public SkillTargetingMode TargetingMode;
         public string[] UpgradePool;

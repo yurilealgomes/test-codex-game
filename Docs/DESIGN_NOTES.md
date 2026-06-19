@@ -11,20 +11,21 @@ Arcane Survival is built around a continuous survival loop:
 5. Level ups pause the game and present three upgrade cards.
 6. Upgrades improve stats, unlock skills, or strengthen existing skills.
 7. Waves scale over time and bosses appear periodically.
-8. The run continues without a fixed endpoint.
+8. After the first major boss, the player chooses to end the run or continue into Endless Mode.
 
 ## Infinite Progression
 
-The run has no hard completion condition. Difficulty scales through:
+The run has a milestone boss choice and optional Endless Mode. Difficulty scales through:
 
 ```text
 Elapsed run time
 Current wave
 Bosses defeated
 Player level
+Endless Mode time
 ```
 
-The player should feel powerful through upgrades and synergies, while enemy density and durability keep increasing.
+The player should feel powerful through upgrades and synergies, while enemy density and durability keep increasing. Endless Mode increases pressure faster after the first major boss if the player chooses to continue.
 
 ## Waves
 
@@ -43,7 +44,7 @@ Rune Guardian: melee boss with charge and close area attacks.
 Astral Witch: ranged boss with projectiles, danger zones, and repositioning.
 ```
 
-Each boss defeat increases global difficulty through the progression manager and difficulty scaler.
+The first major boss defeat pauses the run and offers `End Run` or `Continue Endless Mode`. Future bosses continue to increase global difficulty through progression and endless scaling.
 
 ## Skills
 
@@ -60,7 +61,23 @@ Void Zone
 Nature Spikes
 ```
 
-The player starts with Arcane Bolt and Flame Orbit so the first run immediately demonstrates automatic casting and a starter synergy.
+The player chooses one of six starting skills before the run begins. Additional skills are offered first on level 5 and every fifth level afterward while locked skills remain.
+
+## Rarity And Luck
+
+Upgrade rarities are `Common`, `Uncommon`, `Magic`, `Epic`, and `Legendary`. Card colors follow white, green, blue, purple, and gold respectively. The player `Luck` stat shifts upgrade odds toward better rarities without making Legendary common.
+
+## Breakable Exploration Objects
+
+Breakable objects are generated per world chunk and avoid the visible camera area and the player's immediate radius. Destroyed breakables are tracked for the current run, so they do not respawn when chunks recycle. This makes exploration matter without surprising the player with pop-in.
+
+## Special Pickups
+
+The first special pickup is `Magnet`. It pulls all active XP Orbs to the player from anywhere in the run. The pickup is rare and can drop from elites, bosses, and breakables.
+
+## Chain Lightning
+
+Lightning Chain uses a short-lived pooled LineRenderer effect with jittered segments. The chain count and chain radius can be improved by upgrades, and a single cast avoids repeatedly hitting the same target.
 
 ## Synergies
 
@@ -75,9 +92,9 @@ Early balance targets:
 ```text
 Player HP: 100
 Player move speed: 6
-XP for level 2: 10
-XP growth: 1.25 per level
-First boss interval: 5 minutes
+XP for level 2: 18
+XP growth: 1.32 per level
+First boss interval: 15 minutes
 ```
 
 Enemies begin weak so the player levels quickly. Upgrades are intentionally impactful because the game fantasy depends on large spell combinations becoming powerful and readable.

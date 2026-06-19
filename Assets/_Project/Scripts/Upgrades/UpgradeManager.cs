@@ -90,6 +90,15 @@ namespace ArcaneSurvival
                 case UpgradeEffect.IncreaseCriticalDamage:
                     playerStats.CriticalMultiplier += upgrade.Amount * power;
                     break;
+                case UpgradeEffect.IncreaseLuck:
+                    playerStats.Luck += upgrade.Amount * power;
+                    break;
+                case UpgradeEffect.IncreaseChainCount:
+                    playerStats.ExtraChainCount += Mathf.Max(1, Mathf.RoundToInt(upgrade.Amount));
+                    break;
+                case UpgradeEffect.IncreaseChainRadius:
+                    playerStats.ChainRadiusBonus += upgrade.Amount * power;
+                    break;
                 case UpgradeEffect.UnlockNewSkill:
                     UnlockTargetSkill(upgrade.TargetSkillName);
                     break;

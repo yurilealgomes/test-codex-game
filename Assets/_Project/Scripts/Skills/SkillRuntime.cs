@@ -27,7 +27,9 @@ namespace ArcaneSurvival
             if (CooldownRemaining <= 0f)
             {
                 SkillEffect.Execute(this, caster);
-                CooldownRemaining = caster.Stats.ApplyCooldownReduction(Data.Cooldown);
+                DebugGodModeController debugTools;
+                bool noCooldowns = ServiceLocator.TryGet(out debugTools) && debugTools.NoCooldownsEnabled;
+                CooldownRemaining = noCooldowns ? 0.05f : caster.Stats.ApplyCooldownReduction(Data.Cooldown);
             }
         }
 

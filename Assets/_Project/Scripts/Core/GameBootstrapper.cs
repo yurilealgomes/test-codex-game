@@ -40,6 +40,8 @@ namespace ArcaneSurvival
             systems.AddComponent<RunTimer>();
             systems.AddComponent<DifficultyScaler>();
             systems.AddComponent<RunProgressionManager>();
+            systems.AddComponent<PickupManager>();
+            systems.AddComponent<EndlessModeManager>();
             systems.AddComponent<EnemySpawnDirector>();
             systems.AddComponent<WaveDirector>();
             systems.AddComponent<UpgradeOptionGenerator>();
@@ -50,6 +52,8 @@ namespace ArcaneSurvival
             systems.AddComponent<LevelUpPanel>();
             systems.AddComponent<PauseMenu>();
             systems.AddComponent<GameOverPanel>();
+            systems.AddComponent<PostBossChoicePanel>();
+            systems.AddComponent<VictoryPanel>();
             systems.AddComponent<MainMenu>();
             systems.AddComponent<StartingSkillSelectionPanel>();
             systems.AddComponent<DebugGodModeController>();
@@ -140,9 +144,12 @@ namespace ArcaneSurvival
             poolManager.RegisterPool("PlayerProjectile", CreateProjectilePrefab(prefabRoot.transform, "Player Projectile Prefab", new Color(0.32f, 0.68f, 1f), 0.34f), 80, database.PerformanceSettings.MaxAliveProjectiles);
             poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.14f, 0.05f), 0.38f), 40, 180);
             poolManager.RegisterPool("XPOrb", CreateXpOrbPrefab(prefabRoot.transform), 80, 500);
+            poolManager.RegisterPool("SpecialPickup", CreateSpecialPickupPrefab(prefabRoot.transform), 8, 48);
             poolManager.RegisterPool("FloatingDamageText", CreateFloatingTextPrefab(prefabRoot.transform), 24, database.PerformanceSettings.MaxFloatingDamageTexts);
             poolManager.RegisterPool("AreaDamage", CreateAreaDamagePrefab(prefabRoot.transform), 24, 160);
             poolManager.RegisterPool("SkillVFX", CreateVfxPrefab(prefabRoot.transform), 40, database.PerformanceSettings.MaxVfx);
+            poolManager.RegisterPool("ChainLightningEffect", CreateChainLightningPrefab(prefabRoot.transform), 16, 120);
+            poolManager.RegisterPool("BreakableBreakEffect", CreateBreakableBreakPrefab(prefabRoot.transform), 12, 80);
         }
 
         private static GameObject CreateEnemyPrefab(Transform parent)
@@ -195,6 +202,19 @@ namespace ArcaneSurvival
             return orb;
         }
 
+        private static GameObject CreateSpecialPickupPrefab(Transform parent)
+        {
+            GameObject pickup = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            pickup.name = "Special Pickup Prefab";
+            pickup.transform.SetParent(parent);
+            pickup.transform.localScale = Vector3.one * 0.65f;
+            pickup.layer = LayerOrDefault("Pickup");
+            SetColor(pickup, new Color(0.2f, 0.85f, 1f));
+            pickup.AddComponent<PooledObject>();
+            pickup.AddComponent<SpecialPickup>();
+            return pickup;
+        }
+
         private static GameObject CreateFloatingTextPrefab(Transform parent)
         {
             GameObject text = new GameObject("Floating Damage Text Prefab", typeof(TextMesh));
@@ -227,6 +247,43 @@ namespace ArcaneSurvival
             return vfx;
         }
 
+        private static GameObject CreateChainLightningPrefab(Transform parent)
+        {
+            GameObject effect = new GameObject("Chain Lightning Effect Prefab", typeof(LineRenderer));
+            effect.transform.SetParent(parent);
+            LineRenderer lineRenderer = effect.GetComponent<LineRenderer>();
+            Shader shader = Shader.Find("Sprites/Default");
+            lineRenderer.material = new Material(shader != null ? shader : Shader.Find("Standard"));
+            lineRenderer.textureMode = LineTextureMode.Stretch;
+            effect.AddComponent<PooledObject>();
+            effect.AddComponent<ChainLightningEffect>();
+            return effect;
+        }
+
+        private static GameObject CreateBreakableBreakPrefab(Transform parent)
+        {
+            GameObject root = new GameObject("Breakable Break Effect Prefab");
+            root.transform.SetParent(parent);
+            for (int i = 0; i < 6; i++)
+            {
+                GameObject shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                shard.name = "Shard " + (i + 1);
+                shard.transform.SetParent(root.transform, false);
+                shard.transform.localPosition = Random.onUnitSphere * 0.12f;
+                shard.transform.localScale = Vector3.one * 0.16f;
+                Collider collider = shard.GetComponent<Collider>();
+                if (collider != null)
+                {
+                    Object.Destroy(collider);
+                }
+                SetColor(shard, Color.white);
+            }
+
+            root.AddComponent<PooledObject>();
+            root.AddComponent<BreakableBreakEffect>();
+            return root;
+        }
+
         private static GameDatabase CreateDatabase()
         {
             GameDatabase database = new GameDatabase();
@@ -236,6 +293,7 @@ namespace ArcaneSurvival
             CreateSkills(database);
             CreateEnemies(database);
             CreateBosses(database);
+            CreatePickups(database);
             CreateUpgrades(database);
             CreateSynergies(database);
             return database;
@@ -247,8 +305,11 @@ namespace ArcaneSurvival
             data.PrimaryGroundColor = new Color(0.14f, 0.20f, 0.18f);
             data.SecondaryGroundColor = new Color(0.11f, 0.16f, 0.18f);
             data.DecorationColor = new Color(0.26f, 0.30f, 0.29f);
-            data.DecorationsPerChunk = 6;
+            data.DecorationsPerChunk = 0;
             data.BreakablesPerChunk = 3;
+            data.MinBreakableDistanceFromPlayer = 18f;
+            data.CameraBreakableMargin = 0.12f;
+            data.BreakablePlacementAttempts = 10;
             data.BreakableObjects = new[]
             {
                 CreateBreakableData("Arcane Crystal", 16f, 2f, new Color(0.34f, 0.74f, 1f), new Vector3(0.36f, 0.85f, 0.36f), new Vector3(0.68f, 1.55f, 0.68f)),
@@ -295,6 +356,8 @@ namespace ArcaneSurvival
             data.Duration = duration;
             data.ProjectileCount = projectileCount;
             data.ProjectileSpeed = projectileSpeed;
+            data.ChainCount = kind == SkillEffectKind.LightningChain ? 3 : 0;
+            data.ChainRadius = kind == SkillEffectKind.LightningChain ? 8f : 0f;
             data.CanCrit = canCrit;
             data.TargetingMode = targeting;
             data.VisualColor = color;
@@ -356,28 +419,42 @@ namespace ArcaneSurvival
             database.Bosses.Add(witch);
         }
 
+        private static void CreatePickups(GameDatabase database)
+        {
+            PickupData magnet = ScriptableObject.CreateInstance<PickupData>();
+            magnet.PickupName = "Magnet";
+            magnet.Type = PickupType.Magnet;
+            magnet.VisualColor = new Color(0.2f, 0.85f, 1f);
+            magnet.Value = 1f;
+            database.Pickups.Add(magnet);
+        }
+
         private static void CreateUpgrades(GameDatabase database)
         {
-            AddUpgrade(database, "Sharpened Spellwork", "Increase all spell damage.", UpgradeRarity.Common, UpgradeEffect.IncreaseDamage, 0.12f, "", "All Skills");
-            AddUpgrade(database, "Quickened Casting", "Reduce global skill cooldowns.", UpgradeRarity.Common, UpgradeEffect.ReduceCooldown, 0.06f, "", "All Skills");
-            AddUpgrade(database, "Split Focus", "Gain one extra projectile.", UpgradeRarity.Rare, UpgradeEffect.IncreaseProjectileCount, 1f, "", "Projectile Skills");
+            AddUpgrade(database, "Sharpened Spellwork", "Spell Damage +12%.", UpgradeRarity.Common, UpgradeEffect.IncreaseDamage, 0.12f, "", "All Skills");
+            AddUpgrade(database, "Quickened Casting", "Skill Cooldowns -6%.", UpgradeRarity.Uncommon, UpgradeEffect.ReduceCooldown, 0.06f, "", "All Skills");
+            AddUpgrade(database, "Split Focus", "Projectiles +1.", UpgradeRarity.Magic, UpgradeEffect.IncreaseProjectileCount, 1f, "", "Projectile Skills");
             AddUpgrade(database, "Widened Sigils", "Increase spell area.", UpgradeRarity.Common, UpgradeEffect.IncreaseArea, 0.15f, "", "Area Skills");
-            AddUpgrade(database, "Lingering Power", "Increase spell duration.", UpgradeRarity.Common, UpgradeEffect.IncreaseDuration, 0.18f, "", "Duration Skills");
+            AddUpgrade(database, "Lingering Power", "Spell Duration +18%.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseDuration, 0.18f, "", "Duration Skills");
             AddUpgrade(database, "Fleet Steps", "Increase movement speed.", UpgradeRarity.Common, UpgradeEffect.IncreaseMoveSpeed, 0.55f, "", "Player");
             AddUpgrade(database, "Magnetized Runes", "Increase XP pickup radius.", UpgradeRarity.Common, UpgradeEffect.IncreasePickupRadius, 0.75f, "", "Player");
-            AddUpgrade(database, "Vital Ward", "Increase maximum health and heal fully.", UpgradeRarity.Rare, UpgradeEffect.IncreaseMaxHP, 22f, "", "Player");
-            AddUpgrade(database, "Keen Arcana", "Increase critical chance.", UpgradeRarity.Rare, UpgradeEffect.IncreaseCriticalChance, 0.04f, "", "Player");
+            AddUpgrade(database, "Vital Ward", "Max HP +22 and heal to full.", UpgradeRarity.Magic, UpgradeEffect.IncreaseMaxHP, 22f, "", "Player");
+            AddUpgrade(database, "Keen Arcana", "Critical Chance +4%.", UpgradeRarity.Magic, UpgradeEffect.IncreaseCriticalChance, 0.04f, "", "Player");
             AddUpgrade(database, "Ruinous Crits", "Increase critical damage.", UpgradeRarity.Epic, UpgradeEffect.IncreaseCriticalDamage, 0.28f, "", "Player");
-            AddUpgrade(database, "Learn Arcane Bolt", "Unlock Arcane Bolt.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Arcane Bolt", "Arcane Bolt");
-            AddUpgrade(database, "Learn Flame Orbit", "Unlock Flame Orbit.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Flame Orbit", "Flame Orbit");
-            AddUpgrade(database, "Learn Ice Nova", "Unlock Ice Nova.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Ice Nova", "Ice Nova");
-            AddUpgrade(database, "Learn Lightning Chain", "Unlock Lightning Chain.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Lightning Chain", "Lightning Chain");
+            AddUpgrade(database, "Lucky Charm", "Luck +1.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseLuck, 1f, "", "Player");
+            AddUpgrade(database, "Better Omens", "Luck +2.", UpgradeRarity.Magic, UpgradeEffect.IncreaseLuck, 2f, "", "Player");
+            AddUpgrade(database, "Learn Arcane Bolt", "Unlock Arcane Bolt.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Arcane Bolt", "Arcane Bolt");
+            AddUpgrade(database, "Learn Flame Orbit", "Unlock Flame Orbit.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Flame Orbit", "Flame Orbit");
+            AddUpgrade(database, "Learn Ice Nova", "Unlock Ice Nova.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Ice Nova", "Ice Nova");
+            AddUpgrade(database, "Learn Lightning Chain", "Unlock Lightning Chain.", UpgradeRarity.Magic, UpgradeEffect.UnlockNewSkill, 1f, "Lightning Chain", "Lightning Chain");
             AddUpgrade(database, "Learn Void Zone", "Unlock Void Zone.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Void Zone", "Void Zone");
             AddUpgrade(database, "Learn Nature Spikes", "Unlock Nature Spikes.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Nature Spikes", "Nature Spikes");
             AddUpgrade(database, "Arcane Bolt Mastery", "Upgrade Arcane Bolt.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Arcane Bolt", "Arcane Bolt");
             AddUpgrade(database, "Flame Orbit Mastery", "Upgrade Flame Orbit.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Flame Orbit", "Flame Orbit");
             AddUpgrade(database, "Ice Nova Mastery", "Upgrade Ice Nova.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Ice Nova", "Ice Nova");
             AddUpgrade(database, "Lightning Chain Mastery", "Upgrade Lightning Chain.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Lightning Chain", "Lightning Chain");
+            AddUpgrade(database, "Branching Lightning", "Lightning Chain Count +1.", UpgradeRarity.Magic, UpgradeEffect.IncreaseChainCount, 1f, "Lightning Chain", "Lightning Chain");
+            AddUpgrade(database, "Conductive Air", "Lightning Chain Radius +2.0.", UpgradeRarity.Uncommon, UpgradeEffect.IncreaseChainRadius, 2f, "Lightning Chain", "Lightning Chain");
             AddUpgrade(database, "Void Zone Mastery", "Upgrade Void Zone.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Void Zone", "Void Zone");
             AddUpgrade(database, "Nature Spikes Mastery", "Upgrade Nature Spikes.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Nature Spikes", "Nature Spikes");
             AddUpgrade(database, "Elemental Convergence", "Strengthen elemental synergies.", UpgradeRarity.Legendary, UpgradeEffect.ActivateOrStrengthenSynergy, 0.18f, "Lightning Chain", "Synergy");

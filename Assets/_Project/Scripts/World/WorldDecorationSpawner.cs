@@ -15,7 +15,7 @@ namespace ArcaneSurvival
             }
         }
 
-        public void Populate(WorldChunk chunk, WorldChunkData data)
+        public void Populate(WorldChunk chunk, WorldChunkData data, InfiniteWorldManager worldManager)
         {
             if (chunk == null || data == null)
             {
@@ -48,10 +48,10 @@ namespace ArcaneSurvival
             }
 
             chunk.HideDecorationsFrom(data.DecorationsPerChunk);
-            PopulateBreakables(chunk, data, random);
+            PopulateBreakables(chunk, data, random, worldManager);
         }
 
-        private void PopulateBreakables(WorldChunk chunk, WorldChunkData data, System.Random random)
+        private void PopulateBreakables(WorldChunk chunk, WorldChunkData data, System.Random random, InfiniteWorldManager worldManager)
         {
             if (data.BreakableObjects == null || data.BreakableObjects.Length == 0)
             {
@@ -62,15 +62,40 @@ namespace ArcaneSurvival
             for (int i = 0; i < data.BreakablesPerChunk; i++)
             {
                 GameObject breakableObject = chunk.GetBreakable(i);
-                breakableObject.SetActive(true);
+                string breakableKey = worldManager != null ? worldManager.GetBreakableKey(chunk.Coordinate, i) : chunk.Coordinate.x + ":" + chunk.Coordinate.y + ":" + i;
+                if (worldManager != null && worldManager.IsBreakableBroken(chunk.Coordinate, i))
+                {
+                    breakableObject.SetActive(false);
+                    continue;
+                }
 
                 BreakableObjectData objectData = data.BreakableObjects[random.Next(0, data.BreakableObjects.Length)];
-                float x = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
-                float z = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                Vector3 localPosition = Vector3.zero;
+                bool validPosition = false;
+                int attempts = Mathf.Max(1, data.BreakablePlacementAttempts);
+                for (int attempt = 0; attempt < attempts; attempt++)
+                {
+                    float x = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                    float z = ((float)random.NextDouble() - 0.5f) * chunk.Size * 0.82f;
+                    localPosition = new Vector3(x, 0.48f, z);
+                    Vector3 worldPosition = chunk.transform.TransformPoint(localPosition);
+                    if (worldManager == null || worldManager.IsSafeBreakablePosition(worldPosition, data))
+                    {
+                        validPosition = true;
+                        break;
+                    }
+                }
 
-                breakableObject.transform.localPosition = new Vector3(x, 0.48f, z);
+                if (!validPosition)
+                {
+                    breakableObject.SetActive(false);
+                    continue;
+                }
+
+                breakableObject.SetActive(true);
+                breakableObject.transform.localPosition = localPosition;
                 breakableObject.transform.rotation = Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f);
-                breakableSpawner.Configure(breakableObject, objectData, random);
+                breakableSpawner.Configure(breakableObject, objectData, random, breakableKey, worldManager);
             }
 
             chunk.HideBreakablesFrom(data.BreakablesPerChunk);

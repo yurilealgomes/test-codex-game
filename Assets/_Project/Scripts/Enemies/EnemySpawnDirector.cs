@@ -86,5 +86,20 @@ namespace ArcaneSurvival
 
             return boss;
         }
+
+        private void OnDrawGizmos()
+        {
+            DebugGodModeController debugTools;
+            if (!ServiceLocator.TryGet(out debugTools) || !debugTools.SpawnDebugEnabled || player == null)
+            {
+                return;
+            }
+
+            Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.35f);
+            Gizmos.DrawWireSphere(player.position, SpawnRadiusMin);
+            Gizmos.DrawWireSphere(player.position, SpawnRadiusMax);
+            Gizmos.color = new Color(1f, 0.7f, 0.2f, 0.35f);
+            Gizmos.DrawWireSphere(player.position, BossSpawnRadius);
+        }
     }
 }

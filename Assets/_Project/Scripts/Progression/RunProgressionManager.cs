@@ -11,6 +11,7 @@ namespace ArcaneSurvival
         private PerformanceSettings performanceSettings;
         private RunBalanceSettings balanceSettings;
         private RunTimer runTimer;
+        private PickupManager pickupManager;
 
         private void Awake()
         {
@@ -29,6 +30,7 @@ namespace ArcaneSurvival
             }
 
             ServiceLocator.TryGet(out runTimer);
+            ServiceLocator.TryGet(out pickupManager);
         }
 
         private void OnDestroy()
@@ -38,8 +40,17 @@ namespace ArcaneSurvival
 
         public void RegisterEnemyDefeated(float xpDrop, Vector3 position)
         {
+            RegisterEnemyDefeated(xpDrop, position, false);
+        }
+
+        public void RegisterEnemyDefeated(float xpDrop, Vector3 position, bool elite)
+        {
             EnemiesDefeated++;
             SpawnXp(GetAdjustedEnemyXp(xpDrop), position);
+            if (pickupManager != null)
+            {
+                pickupManager.TrySpawnMagnet(position, elite ? 0.02f : 0.002f);
+            }
         }
 
         public void SpawnXp(float amount, Vector3 position)
@@ -66,6 +77,22 @@ namespace ArcaneSurvival
         private void HandleBossDefeated()
         {
             BossesDefeated++;
+        }
+
+        public void TryDropBossMagnet(Vector3 position)
+        {
+            if (pickupManager != null)
+            {
+                pickupManager.TrySpawnMagnet(position, 0.25f);
+            }
+        }
+
+        public void TryDropBreakableMagnet(Vector3 position)
+        {
+            if (pickupManager != null)
+            {
+                pickupManager.TrySpawnMagnet(position, 0.01f);
+            }
         }
 
         private float GetAdjustedEnemyXp(float xpDrop)

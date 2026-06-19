@@ -51,6 +51,8 @@ Controls:
 ```text
 WASD: Move
 Mouse: UI navigation
+Card choices: A / Left Arrow and D / Right Arrow move selection
+Card choices: Space or Enter confirms selection
 Esc: Pause
 Enter or Space: Start run
 ```
@@ -59,14 +61,74 @@ Gameplay:
 
 1. Start a run from the start screen.
 2. Move with WASD.
-3. Arcane Bolt and Flame Orbit cast automatically.
-4. Enemies spawn outside the camera view and chase the player.
-5. Defeated enemies drop XP orbs.
-6. Collect XP by moving near orbs.
-7. Leveling up pauses the game and presents three upgrade cards.
-8. Choose an upgrade to continue.
-9. Waves scale endlessly over time.
-10. Bosses spawn at configured intervals with a warning and a boss health bar.
+3. Choose one starting skill.
+4. Skills cast automatically during combat.
+5. Enemies spawn outside the camera view and chase the player.
+6. Defeated enemies drop XP orbs with value-based tier colors.
+7. Collect XP by moving near orbs.
+8. Leveling up pauses the game and presents three upgrade cards.
+9. Every fifth level offers locked skill unlock cards first.
+10. The first major boss opens a choice to end the run or continue Endless Mode.
+
+## Debug Commands
+
+The runtime debug overlay is available for editor testing.
+
+```text
+F1: Toggle debug overlay
+F2: Toggle No Cooldowns
+F3: Toggle Infinite XP
+F4: Toggle Spawn Debug
+F5: Toggle Chunk Debug
+F6: Add XP
+F7: Toggle God Mode
+F8: Force Level Up
+F9: Spawn Boss
+F10: Clear Enemies
+F11: Toggle Damage Debug
+F12: Break nearby objects
+```
+
+Debug powers are shown as `ON` or `OFF` in the overlay. The overlay is intended for editor/testing use.
+
+## Rarities And Luck
+
+Upgrade rarities are:
+
+```text
+Common: white
+Uncommon: green
+Magic: blue
+Epic: purple
+Legendary: gold
+```
+
+The player has a `Luck` stat. Luck reduces the weight of Common upgrade rolls and gradually improves the odds of Uncommon, Magic, Epic, and Legendary cards. Legendary remains rare.
+
+## Pickups
+
+Special pickups are supported through `PickupData` and `PickupType`.
+
+Implemented pickup:
+
+```text
+Magnet: pulls all active XP Orbs toward the player from anywhere in the run.
+```
+
+## Breakable Objects
+
+Breakable objects are generated as part of world chunks. They do not spawn inside the camera view, avoid the player's immediate area, receive damage, drop XP, and do not respawn after being destroyed during the same run. Destroyed breakables are tracked by chunk coordinate and slot for the current run.
+
+## Endless Mode
+
+After the first major boss is defeated, the run pauses and asks the player to choose:
+
+```text
+End Run
+Continue Endless Mode
+```
+
+Endless Mode resumes gameplay and keeps increasing difficulty over time.
 
 ## Main Scene
 

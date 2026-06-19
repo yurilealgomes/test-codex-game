@@ -13,6 +13,8 @@ namespace ArcaneSurvival
         private Color baseColor;
         private float currentHealth;
         private bool broken;
+        private string breakableKey;
+        private InfiniteWorldManager worldManager;
 
         public bool IsAlive { get { return !broken && currentHealth > 0f; } }
         public Transform Transform { get { return transform; } }
@@ -40,11 +42,13 @@ namespace ArcaneSurvival
             ActiveBreakables.Remove(this);
         }
 
-        public void Initialize(BreakableObjectData objectData, Color tint)
+        public void Initialize(BreakableObjectData objectData, Color tint, string key, InfiniteWorldManager manager)
         {
             data = objectData;
             currentHealth = data != null ? data.MaxHealth : 20f;
             broken = false;
+            breakableKey = key;
+            worldManager = manager;
             gameObject.SetActive(true);
 
             baseColor = tint;
@@ -90,9 +94,20 @@ namespace ArcaneSurvival
             }
 
             broken = true;
+            if (worldManager != null)
+            {
+                worldManager.MarkBreakableBroken(breakableKey);
+            }
+
             float xp = data != null ? data.XpDrop : 1f;
             xpDropper.Drop(xp, transform.position + Vector3.up * 0.4f);
-            SkillEffect.SpawnVfx(transform.position + Vector3.up * 0.5f, baseColor, Vector3.one * 1.2f, 0.28f);
+            RunProgressionManager progressionManager;
+            if (ServiceLocator.TryGet(out progressionManager))
+            {
+                progressionManager.TryDropBreakableMagnet(transform.position);
+            }
+
+            BreakableBreakEffect.Spawn(transform.position + Vector3.up * 0.5f, baseColor);
             gameObject.SetActive(false);
         }
 

@@ -5,7 +5,7 @@ namespace ArcaneSurvival
     [CreateAssetMenu(menuName = "Arcane Survival/Settings/Performance Settings")]
     public sealed class PerformanceSettings : ScriptableObject
     {
-        public int MaxAliveEnemies = 350;
+        public int MaxAliveEnemies = 520;
         public int MaxAliveProjectiles = 500;
         public int MaxFloatingDamageTexts = 80;
         public int MaxVfx = 120;

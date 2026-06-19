@@ -250,6 +250,7 @@ namespace ArcaneSurvival
             if (ServiceLocator.TryGet(out progression))
             {
                 progression.SpawnXp(Data.XPReward, transform.position);
+                progression.TryDropBossMagnet(transform.position);
             }
 
             EventBus.RaiseBossDefeated();

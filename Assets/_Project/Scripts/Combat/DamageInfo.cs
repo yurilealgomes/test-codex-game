@@ -10,6 +10,7 @@ namespace ArcaneSurvival
         public bool IsCritical;
         public GameObject Source;
         public Vector3 Knockback;
+        public Color DisplayColor = Color.white;
         public readonly List<SkillTag> ElementTags = new List<SkillTag>();
         public readonly List<StatusEffect> StatusEffects = new List<StatusEffect>();
 
@@ -21,7 +22,8 @@ namespace ArcaneSurvival
                 FinalDamage = FinalDamage,
                 IsCritical = IsCritical,
                 Source = Source,
-                Knockback = Knockback
+                Knockback = Knockback,
+                DisplayColor = DisplayColor
             };
 
             clone.ElementTags.AddRange(ElementTags);

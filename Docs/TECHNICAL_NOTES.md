@@ -13,6 +13,8 @@ EventBus: Decouples UI, progression, and gameplay notifications.
 ServiceLocator: Provides simple access to core runtime systems.
 PoolManager: Owns reusable object pools.
 GameDatabase: Holds runtime-created data for the prototype.
+PickupManager: Spawns and applies special pickups.
+EndlessModeManager: Tracks Endless Mode scaling after the milestone boss.
 ```
 
 The scene file is minimal by design. `GameBootstrapper` creates all required runtime objects after `MainGame` loads.
@@ -30,6 +32,9 @@ XP orbs
 Floating damage text
 Area damage effects
 Simple VFX
+Chain Lightning effects
+Breakable destruction effects
+Special pickups
 ```
 
 Core pooling scripts:
@@ -50,7 +55,7 @@ This avoids frequent gameplay `Instantiate` and `Destroy` calls for the most com
 Initial limits:
 
 ```text
-Max Alive Enemies: 350
+Max Alive Enemies: 520
 Max Alive Projectiles: 500
 Max Floating Damage Texts: 80
 Enemy Despawn Distance: 70
@@ -77,11 +82,21 @@ FloatingDamageText
 
 Status effects currently support slow, burn-ready data, and pull.
 
+Damage text uses pooled `TextMesh` objects with a shadow child. Critical hits display `CRIT!` with a larger gold pop animation. Damage colors are derived from skill elemental tags when possible.
+
 ## Infinite World
 
 The infinite world is visual rather than mathematically infinite. `InfiniteWorldManager` recycles a 5x5 grid of chunks around the player. Chunks are repositioned when the player crosses chunk boundaries.
 
-Decorations are deterministic per chunk coordinate, so repositioned chunks feel stable without storing endless world state.
+Decorations are disabled for the main gameplay pass to avoid gray non-interactive clutter. Breakable objects are deterministic per chunk coordinate and slot. Destroyed breakables are stored for the current run so recycled chunks do not respawn objects that the player already broke.
+
+Breakable placement validates:
+
+```text
+Minimum distance from player
+Camera viewport margin
+Chunk coordinate and slot persistence
+```
 
 ## Off-Screen Spawn
 
@@ -110,9 +125,48 @@ UpgradeCardUI
 BossWarningUI
 BossHealthBar
 SynergyNotificationUI
+PostBossChoicePanel
+VictoryPanel
 ```
 
 All UI text is in English.
+
+## Debug Tools
+
+`DebugGodModeController` provides editor-facing test commands:
+
+```text
+F1: Toggle debug overlay
+F2: Toggle No Cooldowns
+F3: Toggle Infinite XP
+F4: Toggle Spawn Debug
+F5: Toggle Chunk Debug
+F6: Add XP
+F7: Toggle God Mode
+F8: Force Level Up
+F9: Spawn Boss
+F10: Clear Enemies
+F11: Toggle Damage Debug
+F12: Break nearby objects
+```
+
+Spawn and chunk debug draw simple gizmos in the Scene view when enabled.
+
+## Upgrade Rarity And Luck
+
+Upgrade rarity values are `Common`, `Uncommon`, `Magic`, `Epic`, and `Legendary`. `UpgradeRarityUtility` owns colors, power multipliers, and Luck-adjusted drop weights. `UpgradeDescriptionBuilder` generates specific card descriptions from upgrade data.
+
+## Pickups
+
+Special pickups use `PickupType`, `PickupData`, `SpecialPickup`, and `PickupManager`. `Magnet` is implemented and calls `XPOrb.PullAllTo` so all active XP Orbs move toward the player.
+
+## Chain Lightning
+
+`ChainLightningEffect` uses pooled `LineRenderer` instances with jittered segments. Chain count and radius can be increased by upgrades through `PlayerStats.ExtraChainCount` and `PlayerStats.ChainRadiusBonus`.
+
+## Post Boss Flow
+
+`PostBossChoicePanel` listens for the first boss defeat and pauses the run with `End Run` and `Continue Endless Mode`. `VictoryPanel` handles the simple run completion screen, and `EndlessModeManager` increases pressure after Endless Mode starts.
 
 ## Known Future Improvements
 

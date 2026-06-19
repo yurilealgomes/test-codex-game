@@ -44,9 +44,11 @@ namespace ArcaneSurvival
             baseColor = new Color(rarityColor.r * 0.45f, rarityColor.g * 0.45f, rarityColor.b * 0.45f, 0.96f);
             background.color = baseColor;
             title.text = upgrade.UpgradeName;
-            description.text = upgrade.Description;
+            description.text = UpgradeDescriptionBuilder.Build(upgrade);
             rarity.text = upgrade.Rarity.ToString();
             rarity.color = rarityColor;
+            outline.effectColor = upgrade.Rarity == UpgradeRarity.Legendary ? new Color(1f, 0.78f, 0.18f) : new Color(0.85f, 0.95f, 1f);
+            outline.effectDistance = upgrade.Rarity == UpgradeRarity.Legendary ? new Vector2(7f, 7f) : new Vector2(5f, 5f);
             affectedSkill.text = string.IsNullOrEmpty(upgrade.AffectedSkillLabel) ? "General Upgrade" : upgrade.AffectedSkillLabel;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => onSelected.Invoke(upgrade));
@@ -56,7 +58,7 @@ namespace ArcaneSurvival
         {
             if (outline != null)
             {
-                outline.enabled = selected;
+                outline.enabled = selected || rarity.text == UpgradeRarity.Legendary.ToString();
             }
 
             if (background != null)

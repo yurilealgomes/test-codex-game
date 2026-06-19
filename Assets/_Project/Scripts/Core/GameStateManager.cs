@@ -9,6 +9,8 @@ namespace ArcaneSurvival
         Playing,
         Paused,
         LevelUp,
+        PostBossChoice,
+        Victory,
         GameOver
     }
 

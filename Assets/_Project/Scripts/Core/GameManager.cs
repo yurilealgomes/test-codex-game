@@ -26,7 +26,7 @@ namespace ArcaneSurvival
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape) && stateManager.CurrentState != GameState.MainMenu && stateManager.CurrentState != GameState.GameOver && stateManager.CurrentState != GameState.LevelUp)
+            if (Input.GetKeyDown(KeyCode.Escape) && stateManager.CurrentState != GameState.MainMenu && stateManager.CurrentState != GameState.GameOver && stateManager.CurrentState != GameState.LevelUp && stateManager.CurrentState != GameState.PostBossChoice && stateManager.CurrentState != GameState.Victory)
             {
                 stateManager.TogglePause();
             }

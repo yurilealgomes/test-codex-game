@@ -21,6 +21,7 @@ namespace ArcaneSurvival
         public EnemyHealth Health { get; private set; }
         public bool IsAlive { get { return Health != null && Health.IsAlive; } }
         public bool IsSlowed { get; private set; }
+        public bool IsElite { get; private set; }
         public float CurrentMoveSpeed { get { return Data.MoveSpeed * speedMultiplier * (IsSlowed ? 0.55f : 1f); } }
 
         private void Awake()
@@ -52,6 +53,7 @@ namespace ArcaneSurvival
             target = playerTarget;
             damageMultiplier = damageScale * (elite ? 1.35f : 1f);
             speedMultiplier = speedScale * (elite ? 1.08f : 1f);
+            IsElite = elite;
             deathHandled = false;
             statuses.Clear();
             IsSlowed = false;
@@ -115,7 +117,8 @@ namespace ArcaneSurvival
             RunProgressionManager progression;
             if (ServiceLocator.TryGet(out progression))
             {
-                progression.RegisterEnemyDefeated(Data.XPDrop, transform.position);
+                float xpDrop = Data.XPDrop * (IsElite ? 2.15f : 1f);
+                progression.RegisterEnemyDefeated(xpDrop, transform.position, IsElite);
             }
 
             PoolManager poolManager;
@@ -170,6 +173,7 @@ namespace ArcaneSurvival
         {
             statuses.Clear();
             IsSlowed = false;
+            IsElite = false;
             ActiveEnemies.Remove(this);
         }
     }

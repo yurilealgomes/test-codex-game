@@ -9,10 +9,12 @@ namespace ArcaneSurvival
         [SerializeField] private int activeRadius = 2;
 
         private readonly List<WorldChunk> chunks = new List<WorldChunk>();
+        private readonly HashSet<string> brokenBreakables = new HashSet<string>();
         private Transform player;
         private Vector2Int currentCenter;
         private WorldChunkData chunkData;
         private WorldDecorationSpawner decorationSpawner;
+        private Camera mainCamera;
 
         private void Awake()
         {
@@ -27,6 +29,8 @@ namespace ArcaneSurvival
             {
                 player = playerController.transform;
             }
+
+            mainCamera = Camera.main;
 
             GameDatabase database;
             if (ServiceLocator.TryGet(out database))
@@ -81,7 +85,73 @@ namespace ArcaneSurvival
                     Vector2Int coordinate = new Vector2Int(center.x + x, center.y + z);
                     WorldChunk chunk = chunks[index++];
                     chunk.SetCoordinate(coordinate, chunkData);
-                    decorationSpawner.Populate(chunk, chunkData);
+                    decorationSpawner.Populate(chunk, chunkData, this);
+                }
+            }
+        }
+
+        public bool IsBreakableBroken(Vector2Int coordinate, int slotIndex)
+        {
+            return brokenBreakables.Contains(GetBreakableKey(coordinate, slotIndex));
+        }
+
+        public void MarkBreakableBroken(string breakableKey)
+        {
+            if (!string.IsNullOrEmpty(breakableKey))
+            {
+                brokenBreakables.Add(breakableKey);
+            }
+        }
+
+        public string GetBreakableKey(Vector2Int coordinate, int slotIndex)
+        {
+            return coordinate.x + ":" + coordinate.y + ":" + slotIndex;
+        }
+
+        public bool IsSafeBreakablePosition(Vector3 worldPosition, WorldChunkData data)
+        {
+            if (player != null)
+            {
+                float minDistance = data != null ? data.MinBreakableDistanceFromPlayer : 18f;
+                if (MathUtils.DistanceXZ(worldPosition, player.position) < minDistance)
+                {
+                    return false;
+                }
+            }
+
+            if (mainCamera == null)
+            {
+                mainCamera = Camera.main;
+            }
+
+            if (mainCamera != null && data != null)
+            {
+                Vector3 viewport = mainCamera.WorldToViewportPoint(worldPosition + Vector3.up * 0.8f);
+                float margin = data.CameraBreakableMargin;
+                if (viewport.z > 0f && viewport.x > -margin && viewport.x < 1f + margin && viewport.y > -margin && viewport.y < 1f + margin)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void OnDrawGizmos()
+        {
+            DebugGodModeController debugTools;
+            if (!Application.isPlaying || !ServiceLocator.TryGet(out debugTools) || !debugTools.ChunkDebugEnabled)
+            {
+                return;
+            }
+
+            Gizmos.color = new Color(0.4f, 1f, 0.45f, 0.35f);
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                WorldChunk chunk = chunks[i];
+                if (chunk != null)
+                {
+                    Gizmos.DrawWireCube(chunk.transform.position, new Vector3(chunk.Size, 0.2f, chunk.Size));
                 }
             }
         }

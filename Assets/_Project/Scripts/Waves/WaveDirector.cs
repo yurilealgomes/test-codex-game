@@ -77,8 +77,10 @@ namespace ArcaneSurvival
 
             int baseBatchSize = balanceSettings != null ? balanceSettings.BaseBatchSize : 2;
             int maxBatchSize = balanceSettings != null ? balanceSettings.MaxBatchSize : 18;
-            float pressureMinutes = Mathf.Max(0f, runTimer.MinutesElapsed - 1f);
-            int batchSize = Mathf.Clamp(baseBatchSize + Mathf.FloorToInt(pressureMinutes * 0.4f) + Mathf.FloorToInt(CurrentWave / 6f), baseBatchSize, maxBatchSize);
+            float minutes = runTimer.MinutesElapsed;
+            float pressureMinutes = Mathf.Max(0f, minutes - 1f);
+            int phaseBonus = minutes < 3f ? 0 : minutes < 6f ? 2 : minutes < 10f ? 5 : minutes < 15f ? 9 : 14;
+            int batchSize = Mathf.Clamp(baseBatchSize + phaseBonus + Mathf.FloorToInt(pressureMinutes * 0.85f), baseBatchSize, maxBatchSize);
             for (int i = 0; i < batchSize && EnemyController.ActiveEnemies.Count < maxAliveEnemies; i++)
             {
                 EnemyData data = WeightedRandom.Pick(database.Enemies, GetSpawnWeight);

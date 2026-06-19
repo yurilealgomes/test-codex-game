@@ -103,7 +103,8 @@ namespace ArcaneSurvival
             }
 
             List<IDamageable> hitTargets = new List<IDamageable>();
-            int jumps = 2 + runtime.Level / 2 + caster.Stats.ExtraProjectiles;
+            int jumps = Mathf.Max(1, data.ChainCount + runtime.Level / 2 + caster.Stats.ExtraChainCount);
+            float chainRadius = data.ChainRadius + caster.Stats.ChainRadiusBonus;
             Vector3 lastPosition = caster.transform.position;
 
             for (int i = 0; i <= jumps && current != null; i++)
@@ -121,10 +122,10 @@ namespace ArcaneSurvival
                 }
 
                 current.TakeDamage(damage);
-                SpawnLineVfx(lastPosition + Vector3.up * 0.8f, current.Transform.position + Vector3.up * 0.8f, data.VisualColor);
+                SpawnLightningVfx(lastPosition + Vector3.up * 0.8f, current.Transform.position + Vector3.up * 0.8f, data.VisualColor);
                 hitTargets.Add(current);
                 lastPosition = current.Transform.position;
-                current = SkillTargeting.FindNearestEnemyExcluding(lastPosition, 7f, hitTargets);
+                current = SkillTargeting.FindNearestEnemyExcluding(lastPosition, chainRadius, hitTargets);
             }
 
             Shake(0.04f, 0.06f);
@@ -229,11 +230,25 @@ namespace ArcaneSurvival
             }
         }
 
-        private static void SpawnLineVfx(Vector3 start, Vector3 end, Color color)
+        private static void SpawnLightningVfx(Vector3 start, Vector3 end, Color color)
         {
-            Vector3 midpoint = (start + end) * 0.5f;
-            Vector3 direction = end - start;
-            SpawnVfx(midpoint, color, new Vector3(0.12f, 0.12f, Mathf.Max(0.3f, direction.magnitude)), 0.12f);
+            PoolManager poolManager;
+            if (!ServiceLocator.TryGet(out poolManager))
+            {
+                return;
+            }
+
+            GameObject effectObject = poolManager.Spawn("ChainLightningEffect", Vector3.zero, Quaternion.identity);
+            if (effectObject == null)
+            {
+                return;
+            }
+
+            ChainLightningEffect effect = effectObject.GetComponent<ChainLightningEffect>();
+            if (effect != null)
+            {
+                effect.Play(start, end, color, 0.16f);
+            }
         }
 
         private static bool IsSlowed(IDamageable target)

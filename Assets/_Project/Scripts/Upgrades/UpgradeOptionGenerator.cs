@@ -7,6 +7,7 @@ namespace ArcaneSurvival
     {
         private GameDatabase database;
         private PlayerSkillInventory skillInventory;
+        private PlayerStats playerStats;
 
         private void Awake()
         {
@@ -17,6 +18,7 @@ namespace ArcaneSurvival
         {
             ServiceLocator.TryGet(out database);
             ServiceLocator.TryGet(out skillInventory);
+            ServiceLocator.TryGet(out playerStats);
         }
 
         public UpgradeData[] GenerateOptions(int count, int playerLevel)
@@ -27,26 +29,50 @@ namespace ArcaneSurvival
                 return options.ToArray();
             }
 
+            List<UpgradeData> lockedSkillOptions = BuildLockedSkillOptions(playerLevel);
+            if (lockedSkillOptions.Count > 0)
+            {
+                AddUniqueWeightedOptions(options, lockedSkillOptions, count);
+                if (options.Count >= count || lockedSkillOptions.Count >= count)
+                {
+                    return options.ToArray();
+                }
+            }
+
             List<UpgradeData> candidates = BuildCandidatePool(playerLevel);
             if (candidates.Count == 0)
             {
                 return options.ToArray();
             }
 
-            AddPreferredOwnedSkillUpgrade(options, candidates, count);
-
-            int attempts = 0;
-            while (options.Count < count && attempts < 60)
+            if (options.Count == 0)
             {
-                attempts++;
-                UpgradeData option = WeightedRandom.Pick(candidates, GetUpgradeWeight);
-                if (option != null && !options.Contains(option))
+                AddPreferredOwnedSkillUpgrade(options, candidates, count);
+            }
+
+            AddUniqueWeightedOptions(options, candidates, count);
+
+            return options.ToArray();
+        }
+
+        private List<UpgradeData> BuildLockedSkillOptions(int playerLevel)
+        {
+            List<UpgradeData> options = new List<UpgradeData>();
+            if (!IsNewSkillLevel(playerLevel))
+            {
+                return options;
+            }
+
+            for (int i = 0; i < database.Upgrades.Count; i++)
+            {
+                UpgradeData upgrade = database.Upgrades[i];
+                if (upgrade != null && upgrade.Effect == UpgradeEffect.UnlockNewSkill && !HasSkill(upgrade.TargetSkillName))
                 {
-                    options.Add(option);
+                    options.Add(upgrade);
                 }
             }
 
-            return options.ToArray();
+            return options;
         }
 
         private List<UpgradeData> BuildCandidatePool(int playerLevel)
@@ -75,6 +101,11 @@ namespace ArcaneSurvival
                 case UpgradeEffect.ActivateOrStrengthenSynergy:
                     return IsNewSkillLevel(playerLevel) && !HasSkill(upgrade.TargetSkillName);
                 default:
+                    if (!string.IsNullOrEmpty(upgrade.TargetSkillName) && !HasSkill(upgrade.TargetSkillName))
+                    {
+                        return false;
+                    }
+
                     return true;
             }
         }
@@ -96,7 +127,8 @@ namespace ArcaneSurvival
 
         private float GetUpgradeWeight(UpgradeData upgrade)
         {
-            float weight = UpgradeRarityUtility.GetDropWeight(upgrade.Rarity);
+            float luck = playerStats != null ? playerStats.Luck : 0f;
+            float weight = UpgradeRarityUtility.GetDropWeight(upgrade.Rarity, luck);
             if (upgrade.Effect == UpgradeEffect.UpgradeExistingSkill && HasSkill(upgrade.TargetSkillName))
             {
                 weight *= 2.35f;
@@ -122,6 +154,20 @@ namespace ArcaneSurvival
         private static bool IsNewSkillLevel(int playerLevel)
         {
             return playerLevel > 1 && playerLevel % 5 == 0;
+        }
+
+        private void AddUniqueWeightedOptions(List<UpgradeData> options, List<UpgradeData> candidates, int count)
+        {
+            int attempts = 0;
+            while (options.Count < count && attempts < 80)
+            {
+                attempts++;
+                UpgradeData option = WeightedRandom.Pick(candidates, GetUpgradeWeight);
+                if (option != null && !options.Contains(option))
+                {
+                    options.Add(option);
+                }
+            }
         }
     }
 }

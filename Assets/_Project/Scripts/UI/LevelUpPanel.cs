@@ -68,23 +68,11 @@ namespace ArcaneSurvival
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-                SelectIndex(0);
-            }
-            else if (Input.GetKeyDown(KeyCode.S))
-            {
-                SelectIndex(1);
-            }
-            else if (Input.GetKeyDown(KeyCode.D))
-            {
-                SelectIndex(2);
-            }
-            else if (Input.GetKeyDown(KeyCode.LeftArrow))
+            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
             {
                 SelectIndex(selectedIndex - 1);
             }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
             {
                 SelectIndex(selectedIndex + 1);
             }
@@ -101,7 +89,7 @@ namespace ArcaneSurvival
                 return;
             }
 
-            selectedIndex = Mathf.Clamp(index, 0, currentUpgrades.Length - 1);
+            selectedIndex = (index + currentUpgrades.Length) % currentUpgrades.Length;
             for (int i = 0; i < cards.Count; i++)
             {
                 cards[i].SetSelected(i == selectedIndex && i < currentUpgrades.Length);

@@ -9,6 +9,7 @@ namespace ArcaneSurvival
         public readonly List<BossData> Bosses = new List<BossData>();
         public readonly List<UpgradeData> Upgrades = new List<UpgradeData>();
         public readonly List<SynergyData> Synergies = new List<SynergyData>();
+        public readonly List<PickupData> Pickups = new List<PickupData>();
 
         public PerformanceSettings PerformanceSettings;
         public WorldChunkData WorldChunkData;
@@ -17,6 +18,11 @@ namespace ArcaneSurvival
         public SkillData FindSkill(string skillName)
         {
             return Skills.Find(skill => skill != null && skill.SkillName == skillName);
+        }
+
+        public PickupData FindPickup(PickupType type)
+        {
+            return Pickups.Find(pickup => pickup != null && pickup.Type == type);
         }
     }
 }

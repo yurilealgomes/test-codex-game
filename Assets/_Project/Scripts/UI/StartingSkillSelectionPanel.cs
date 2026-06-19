@@ -51,14 +51,6 @@ namespace ArcaneSurvival
             {
                 SelectIndex(selectedIndex + 1);
             }
-            else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
-            {
-                SelectIndex(selectedIndex - 3);
-            }
-            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-            {
-                SelectIndex(selectedIndex + 3);
-            }
             else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
             {
                 ConfirmSelection();

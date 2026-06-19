@@ -31,7 +31,7 @@ namespace ArcaneSurvival
 
             float amount = Mathf.Max(0f, damageInfo.FinalDamage);
             currentHealth = Mathf.Max(0f, currentHealth - amount);
-            SpawnFloatingText(amount, damageInfo.IsCritical);
+            SpawnFloatingText(damageInfo);
 
             if (Damaged != null)
             {
@@ -54,7 +54,7 @@ namespace ArcaneSurvival
             currentHealth = Mathf.Min(maxHealth, currentHealth + Mathf.Max(0f, amount));
         }
 
-        private void SpawnFloatingText(float amount, bool critical)
+        private void SpawnFloatingText(DamageInfo damageInfo)
         {
             PoolManager poolManager;
             if (!ServiceLocator.TryGet(out poolManager))
@@ -71,7 +71,7 @@ namespace ArcaneSurvival
             FloatingDamageText floatingText = textObject.GetComponent<FloatingDamageText>();
             if (floatingText != null)
             {
-                floatingText.Play(amount, critical);
+                floatingText.Play(damageInfo);
             }
         }
     }
