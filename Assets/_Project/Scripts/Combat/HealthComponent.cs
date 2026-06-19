@@ -62,6 +62,16 @@ namespace ArcaneSurvival
                 return;
             }
 
+            GameDatabase database;
+            int maxFloatingTexts = ServiceLocator.TryGet(out database) && database.PerformanceSettings != null
+                ? database.PerformanceSettings.MaxFloatingDamageTexts
+                : 80;
+            bool textBudgetTight = poolManager.GetActiveCount("FloatingDamageText") >= Mathf.Max(1, maxFloatingTexts - 8);
+            if (textBudgetTight && !damageInfo.IsCritical)
+            {
+                return;
+            }
+
             GameObject textObject = poolManager.Spawn("FloatingDamageText", transform.position + Vector3.up * 1.8f, Quaternion.identity);
             if (textObject == null)
             {

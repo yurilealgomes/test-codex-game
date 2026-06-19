@@ -8,11 +8,13 @@ namespace ArcaneSurvival
         public static event Action GameOver;
         public static event Action<float, float> PlayerHealthChanged;
         public static event Action<int, float, float> PlayerExperienceChanged;
+        public static event Action<float> PlayerExperienceGained;
         public static event Action<int> PlayerLevelUp;
         public static event Action<float, int, int> RunStatsChanged;
         public static event Action<string> BossWarning;
         public static event Action<BossController> BossSpawned;
         public static event Action BossDefeated;
+        public static event Action<string> PickupCollected;
         public static event Action<string, string> SynergyActivated;
         public static event Action SkillInventoryChanged;
 
@@ -22,11 +24,13 @@ namespace ArcaneSurvival
             GameOver = null;
             PlayerHealthChanged = null;
             PlayerExperienceChanged = null;
+            PlayerExperienceGained = null;
             PlayerLevelUp = null;
             RunStatsChanged = null;
             BossWarning = null;
             BossSpawned = null;
             BossDefeated = null;
+            PickupCollected = null;
             SynergyActivated = null;
             SkillInventoryChanged = null;
         }
@@ -60,6 +64,14 @@ namespace ArcaneSurvival
             if (PlayerExperienceChanged != null)
             {
                 PlayerExperienceChanged.Invoke(level, current, required);
+            }
+        }
+
+        public static void RaisePlayerExperienceGained(float amount)
+        {
+            if (PlayerExperienceGained != null)
+            {
+                PlayerExperienceGained.Invoke(amount);
             }
         }
 
@@ -100,6 +112,14 @@ namespace ArcaneSurvival
             if (BossDefeated != null)
             {
                 BossDefeated.Invoke();
+            }
+        }
+
+        public static void RaisePickupCollected(string pickupName)
+        {
+            if (PickupCollected != null)
+            {
+                PickupCollected.Invoke(pickupName);
             }
         }
 

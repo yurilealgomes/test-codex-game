@@ -84,6 +84,8 @@ Status effects currently support slow, burn-ready data, and pull.
 
 Damage text uses pooled `TextMesh` objects with a shadow child. Critical hits display `CRIT!` with a larger gold pop animation. Damage colors are derived from skill elemental tags when possible.
 
+When the floating damage text pool is close to its configured limit, non-critical damage text is skipped so critical hits and important feedback remain readable during dense horde moments.
+
 ## Infinite World
 
 The infinite world is visual rather than mathematically infinite. `InfiniteWorldManager` recycles a 5x5 grid of chunks around the player. Chunks are repositioned when the player crosses chunk boundaries.
@@ -131,6 +133,8 @@ VictoryPanel
 
 All UI text is in English.
 
+`HUDController` smooths HP and XP bar fill values, shows short feedback for XP gains, level ups, and special pickups, and adds a subtle low-health pulse. The warning overlay is non-interactive so it does not block mouse input on gameplay choice panels.
+
 ## Debug Tools
 
 `DebugGodModeController` provides editor-facing test commands:
@@ -160,6 +164,8 @@ Upgrade rarity values are `Common`, `Uncommon`, `Magic`, `Epic`, and `Legendary`
 
 Special pickups use `PickupType`, `PickupData`, `SpecialPickup`, and `PickupManager`. `Magnet` is implemented and calls `XPOrb.PullAllTo` so all active XP Orbs move toward the player.
 
+The Magnet placeholder is built from runtime Unity primitives instead of an external asset. `SpecialPickup` applies bobbing and pulse motion to make special drops visually distinct from XP orbs.
+
 ## Chain Lightning
 
 `ChainLightningEffect` uses pooled `LineRenderer` instances with jittered segments. Chain count and radius can be increased by upgrades through `PlayerStats.ExtraChainCount` and `PlayerStats.ChainRadiusBonus`.
@@ -167,6 +173,20 @@ Special pickups use `PickupType`, `PickupData`, `SpecialPickup`, and `PickupMana
 ## Post Boss Flow
 
 `PostBossChoicePanel` listens for the first boss defeat and pauses the run with `End Run` and `Continue Endless Mode`. `VictoryPanel` handles the simple run completion screen, and `EndlessModeManager` increases pressure after Endless Mode starts.
+
+`WaveDirector` now issues the boss warning before the spawn time and stores the pending boss data so the warning matches the boss that appears. `BossHealthBar` shows current and max HP and shifts color when the boss is near defeat.
+
+## Physics Query Performance
+
+High-frequency overlap checks use non-allocating buffers:
+
+```text
+PlayerCollector: pickup scans
+Projectile: projectile hit checks
+AreaDamage: tick-based area damage checks
+```
+
+This keeps XP collection, projectile combat, and large damage zones from allocating new collider arrays every frame.
 
 ## Known Future Improvements
 

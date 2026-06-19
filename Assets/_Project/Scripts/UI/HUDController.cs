@@ -14,12 +14,24 @@ namespace ArcaneSurvival
         private Text timerText;
         private Text waveText;
         private Text enemyCountText;
+        private Text feedbackText;
+        private Image lowHealthVignette;
+        private float targetHealthPercent = 1f;
+        private float displayedHealthPercent = 1f;
+        private float targetXpPercent;
+        private float displayedXpPercent;
+        private float queuedXpFeedback;
+        private float feedbackRemaining;
+        private Color feedbackColor = Color.white;
 
         private void Awake()
         {
             ServiceLocator.Register(this);
             EventBus.PlayerHealthChanged += HandleHealthChanged;
             EventBus.PlayerExperienceChanged += HandleExperienceChanged;
+            EventBus.PlayerExperienceGained += HandleExperienceGained;
+            EventBus.PlayerLevelUp += HandlePlayerLevelUp;
+            EventBus.PickupCollected += HandlePickupCollected;
             EventBus.RunStatsChanged += HandleRunStatsChanged;
         }
 
@@ -27,11 +39,16 @@ namespace ArcaneSurvival
         {
             Canvas canvas = ServiceLocator.Get<Canvas>();
             RectTransform root = UIFactory.CreateRect(canvas.transform, "HUD", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            lowHealthVignette = UIFactory.CreatePanel(root, "Low Health Vignette", new Color(0.8f, 0.03f, 0.02f, 0f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            lowHealthVignette.raycastTarget = false;
+            lowHealthVignette.transform.SetAsFirstSibling();
             healthFill = UIFactory.CreateBar(root, "Health Bar", new Color(0.95f, 0.16f, 0.14f), new Vector2(0.02f, 0.92f), new Vector2(0.34f, 0.965f), Vector2.zero, Vector2.zero);
             xpFill = UIFactory.CreateBar(root, "XP Bar", new Color(0.25f, 0.62f, 1f), new Vector2(0.02f, 0.875f), new Vector2(0.34f, 0.91f), Vector2.zero, Vector2.zero);
             UIFactory.SetBarFill(xpFill, 0f);
             healthText = UIFactory.CreateText(root, "Health Text", "HP 100 / 100", 16, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.92f), new Vector2(0.32f, 0.965f), Vector2.zero, Vector2.zero);
             xpText = UIFactory.CreateText(root, "XP Text", "XP 0 / 18", 15, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.875f), new Vector2(0.32f, 0.91f), Vector2.zero, Vector2.zero);
+            feedbackText = UIFactory.CreateText(root, "HUD Feedback", "", 16, new Color(0.7f, 0.9f, 1f), TextAnchor.MiddleLeft, new Vector2(0.35f, 0.875f), new Vector2(0.52f, 0.915f), Vector2.zero, Vector2.zero);
+            feedbackText.gameObject.SetActive(false);
             levelText = UIFactory.CreateText(root, "Level Text", "Level 1", 18, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.82f), new Vector2(0.22f, 0.86f), Vector2.zero, Vector2.zero);
             lowHealthText = UIFactory.CreateText(root, "Low Health", "Low Health", 18, new Color(1f, 0.18f, 0.12f), TextAnchor.MiddleLeft, new Vector2(0.22f, 0.815f), new Vector2(0.42f, 0.865f), Vector2.zero, Vector2.zero);
             lowHealthText.gameObject.SetActive(false);
@@ -57,26 +74,35 @@ namespace ArcaneSurvival
         {
             EventBus.PlayerHealthChanged -= HandleHealthChanged;
             EventBus.PlayerExperienceChanged -= HandleExperienceChanged;
+            EventBus.PlayerExperienceGained -= HandleExperienceGained;
+            EventBus.PlayerLevelUp -= HandlePlayerLevelUp;
+            EventBus.PickupCollected -= HandlePickupCollected;
             EventBus.RunStatsChanged -= HandleRunStatsChanged;
+        }
+
+        private void Update()
+        {
+            displayedHealthPercent = Mathf.MoveTowards(displayedHealthPercent, targetHealthPercent, Time.unscaledDeltaTime * 4.5f);
+            displayedXpPercent = Mathf.MoveTowards(displayedXpPercent, targetXpPercent, Time.unscaledDeltaTime * 5f);
+
+            if (healthFill != null)
+            {
+                UIFactory.SetBarFill(healthFill, displayedHealthPercent);
+                healthFill.color = GetHealthColor(displayedHealthPercent);
+            }
+
+            if (xpFill != null)
+            {
+                UIFactory.SetBarFill(xpFill, displayedXpPercent);
+            }
+
+            UpdateLowHealthFeedback();
+            UpdateHudFeedback();
         }
 
         private void HandleHealthChanged(float current, float max)
         {
-            if (healthFill != null)
-            {
-                float percent = max <= 0f ? 0f : current / max;
-                UIFactory.SetBarFill(healthFill, percent);
-                healthFill.color = GetHealthColor(percent);
-                if (lowHealthText != null)
-                {
-                    lowHealthText.gameObject.SetActive(percent <= 0.28f);
-                    if (lowHealthText.gameObject.activeSelf)
-                    {
-                        float pulse = 0.65f + Mathf.Sin(Time.unscaledTime * 8f) * 0.35f;
-                        lowHealthText.color = new Color(1f, 0.18f, 0.12f, pulse);
-                    }
-                }
-            }
+            targetHealthPercent = max <= 0f ? 0f : Mathf.Clamp01(current / max);
 
             if (healthText != null)
             {
@@ -86,10 +112,7 @@ namespace ArcaneSurvival
 
         private void HandleExperienceChanged(int level, float current, float required)
         {
-            if (xpFill != null)
-            {
-                UIFactory.SetBarFill(xpFill, required <= 0f ? 0f : current / required);
-            }
+            targetXpPercent = required <= 0f ? 0f : Mathf.Clamp01(current / required);
 
             if (levelText != null)
             {
@@ -100,6 +123,24 @@ namespace ArcaneSurvival
             {
                 xpText.text = "XP " + Mathf.FloorToInt(current) + " / " + Mathf.CeilToInt(required);
             }
+        }
+
+        private void HandleExperienceGained(float amount)
+        {
+            queuedXpFeedback += amount;
+            ShowFeedback("XP +" + Mathf.CeilToInt(queuedXpFeedback), new Color(0.45f, 0.78f, 1f), 0.85f);
+        }
+
+        private void HandlePlayerLevelUp(int level)
+        {
+            queuedXpFeedback = 0f;
+            ShowFeedback("Level " + level + "!", new Color(1f, 0.82f, 0.22f), 1.2f);
+        }
+
+        private void HandlePickupCollected(string pickupName)
+        {
+            queuedXpFeedback = 0f;
+            ShowFeedback(pickupName + " collected", new Color(0.35f, 1f, 1f), 1.15f);
         }
 
         private void HandleRunStatsChanged(float bossCountdownSeconds, int wave, int enemiesAlive)
@@ -124,6 +165,58 @@ namespace ArcaneSurvival
             }
 
             return new Color(0.25f, 0.85f, 0.32f);
+        }
+
+        private void ShowFeedback(string text, Color color, float duration)
+        {
+            if (feedbackText == null)
+            {
+                return;
+            }
+
+            feedbackText.text = text;
+            feedbackColor = color;
+            feedbackRemaining = duration;
+            feedbackText.gameObject.SetActive(true);
+        }
+
+        private void UpdateHudFeedback()
+        {
+            if (feedbackText == null || feedbackRemaining <= 0f)
+            {
+                if (feedbackText != null && feedbackText.gameObject.activeSelf)
+                {
+                    feedbackText.gameObject.SetActive(false);
+                    queuedXpFeedback = 0f;
+                }
+
+                return;
+            }
+
+            feedbackRemaining -= Time.unscaledDeltaTime;
+            float alpha = Mathf.Clamp01(feedbackRemaining / 0.85f);
+            feedbackText.color = new Color(feedbackColor.r, feedbackColor.g, feedbackColor.b, alpha);
+            feedbackText.transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.unscaledTime * 12f) * 0.035f);
+        }
+
+        private void UpdateLowHealthFeedback()
+        {
+            bool lowHealth = targetHealthPercent <= 0.28f;
+            if (lowHealthText != null)
+            {
+                lowHealthText.gameObject.SetActive(lowHealth);
+                if (lowHealth)
+                {
+                    float pulse = 0.65f + Mathf.Sin(Time.unscaledTime * 8f) * 0.35f;
+                    lowHealthText.color = new Color(1f, 0.18f, 0.12f, pulse);
+                }
+            }
+
+            if (lowHealthVignette != null)
+            {
+                float pulse = lowHealth ? 0.07f + Mathf.Sin(Time.unscaledTime * 7f) * 0.025f : 0f;
+                lowHealthVignette.color = new Color(0.8f, 0.03f, 0.02f, Mathf.Max(0f, pulse));
+            }
         }
     }
 }

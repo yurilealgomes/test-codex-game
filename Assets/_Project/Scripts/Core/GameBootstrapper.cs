@@ -204,12 +204,45 @@ namespace ArcaneSurvival
 
         private static GameObject CreateSpecialPickupPrefab(Transform parent)
         {
-            GameObject pickup = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject pickup = new GameObject("Special Pickup Prefab");
             pickup.name = "Special Pickup Prefab";
             pickup.transform.SetParent(parent);
-            pickup.transform.localScale = Vector3.one * 0.65f;
             pickup.layer = LayerOrDefault("Pickup");
-            SetColor(pickup, new Color(0.2f, 0.85f, 1f));
+            SphereCollider pickupCollider = pickup.AddComponent<SphereCollider>();
+            pickupCollider.radius = 0.75f;
+            pickupCollider.isTrigger = true;
+
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            core.name = "Pickup Core";
+            core.transform.SetParent(pickup.transform, false);
+            core.transform.localScale = Vector3.one * 0.52f;
+            RemoveCollider(core);
+            SetColor(core, new Color(0.2f, 0.85f, 1f));
+
+            GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ring.name = "Magnet Ring";
+            ring.transform.SetParent(pickup.transform, false);
+            ring.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            ring.transform.localScale = new Vector3(0.82f, 0.035f, 0.82f);
+            RemoveCollider(ring);
+            SetColor(ring, new Color(0.8f, 0.95f, 1f));
+
+            GameObject leftPole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leftPole.name = "Magnet Left Pole";
+            leftPole.transform.SetParent(pickup.transform, false);
+            leftPole.transform.localPosition = new Vector3(-0.28f, 0f, 0f);
+            leftPole.transform.localScale = new Vector3(0.14f, 0.54f, 0.14f);
+            RemoveCollider(leftPole);
+            SetColor(leftPole, new Color(0.35f, 0.95f, 1f));
+
+            GameObject rightPole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rightPole.name = "Magnet Right Pole";
+            rightPole.transform.SetParent(pickup.transform, false);
+            rightPole.transform.localPosition = new Vector3(0.28f, 0f, 0f);
+            rightPole.transform.localScale = new Vector3(0.14f, 0.54f, 0.14f);
+            RemoveCollider(rightPole);
+            SetColor(rightPole, new Color(1f, 0.95f, 0.35f));
+
             pickup.AddComponent<PooledObject>();
             pickup.AddComponent<SpecialPickup>();
             return pickup;
@@ -242,6 +275,7 @@ namespace ArcaneSurvival
             vfx.name = "Skill VFX Prefab";
             vfx.transform.SetParent(parent);
             SetColor(vfx, Color.white);
+            RemoveCollider(vfx);
             vfx.AddComponent<PooledObject>();
             vfx.AddComponent<SimpleVFX>();
             return vfx;
@@ -508,6 +542,15 @@ namespace ArcaneSurvival
             if (renderer != null)
             {
                 renderer.material = CreateMaterial(color);
+            }
+        }
+
+        private static void RemoveCollider(GameObject gameObject)
+        {
+            Collider collider = gameObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Object.Destroy(collider);
             }
         }
 

@@ -34,7 +34,14 @@ namespace ArcaneSurvival
 
         public void AddExperience(float amount)
         {
-            currentXp += Mathf.Max(0f, amount);
+            float gained = Mathf.Max(0f, amount);
+            if (gained <= 0f)
+            {
+                return;
+            }
+
+            currentXp += gained;
+            EventBus.RaisePlayerExperienceGained(gained);
 
             while (currentXp >= RequiredXp)
             {

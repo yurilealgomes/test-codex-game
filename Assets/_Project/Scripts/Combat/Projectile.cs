@@ -13,6 +13,7 @@ namespace ArcaneSurvival
         private float radius;
         private float lifeRemaining;
         private bool active;
+        private static readonly Collider[] HitBuffer = new Collider[32];
 
         public void Launch(DamageInfo info, Vector3 moveDirection, float projectileSpeed, float lifetime, float hitRadius, DamageTarget targetTeam, Action<Vector3, IDamageable> hitCallback)
         {
@@ -45,10 +46,17 @@ namespace ArcaneSurvival
 
         private void TryHit()
         {
-            Collider[] hits = Physics.OverlapSphere(transform.position, radius);
-            for (int i = 0; i < hits.Length; i++)
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, radius, HitBuffer);
+            for (int i = 0; i < hitCount; i++)
             {
-                IDamageable damageable = DamageUtility.FindDamageable(hits[i], target);
+                Collider hit = HitBuffer[i];
+                if (hit == null)
+                {
+                    continue;
+                }
+
+                IDamageable damageable = DamageUtility.FindDamageable(hit, target);
+                HitBuffer[i] = null;
                 if (damageable == null || !damageable.IsAlive)
                 {
                     continue;

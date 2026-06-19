@@ -4,20 +4,7 @@ Arcane Survival is a Windows PC focused Unity 3D roguelite survival prototype. T
 
 ## Repository
 
-The intended GitHub repository name is `test-codex-game`.
-
-The GitHub CLI was not available in the local environment used to create this prototype, so the remote repository was not created automatically. To publish manually:
-
-```bash
-gh repo create test-codex-game --private --source . --remote origin --push
-```
-
-If `gh` is not installed, create `test-codex-game` on GitHub, then run:
-
-```bash
-git remote add origin https://github.com/YOUR_ACCOUNT/test-codex-game.git
-git push -u origin main
-```
+The GitHub repository name is `test-codex-game`. Gameplay changes should be committed with clear English messages and pushed to `main` so the Unity project clone can import the latest code.
 
 ## Unity Version
 
@@ -68,7 +55,12 @@ Gameplay:
 7. Collect XP by moving near orbs.
 8. Leveling up pauses the game and presents three upgrade cards.
 9. Every fifth level offers locked skill unlock cards first.
-10. The first major boss opens a choice to end the run or continue Endless Mode.
+10. A boss warning appears shortly before the milestone boss spawns.
+11. The first major boss opens a choice to end the run or continue Endless Mode.
+
+## HUD Feedback
+
+The HUD smooths HP and XP bar movement so gains and damage are easier to read. XP gains, level ups, and special pickups show short feedback text near the XP bar. Low health triggers a pulsing warning and a subtle red screen tint.
 
 ## Debug Commands
 
@@ -115,13 +107,15 @@ Implemented pickup:
 Magnet: pulls all active XP Orbs toward the player from anywhere in the run.
 ```
 
+The Magnet uses a simple runtime-built placeholder made from Unity primitives, with bobbing and pulsing motion so it reads differently from XP orbs.
+
 ## Breakable Objects
 
 Breakable objects are generated as part of world chunks. They do not spawn inside the camera view, avoid the player's immediate area, receive damage, drop XP, and do not respawn after being destroyed during the same run. Destroyed breakables are tracked by chunk coordinate and slot for the current run.
 
 ## Endless Mode
 
-After the first major boss is defeated, the run pauses and asks the player to choose:
+The milestone boss warning appears before the boss spawns. After the first major boss is defeated, the run pauses and asks the player to choose:
 
 ```text
 End Run
@@ -129,6 +123,10 @@ Continue Endless Mode
 ```
 
 Endless Mode resumes gameplay and keeps increasing difficulty over time.
+
+## Performance Notes
+
+Common physics checks use non-allocating overlap queries for player pickup collection, projectile hits, and area damage ticks. Floating damage text has a pool budget; critical hits keep priority when the screen is crowded.
 
 ## Main Scene
 

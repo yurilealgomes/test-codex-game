@@ -35,7 +35,7 @@ The current wave is derived from elapsed minutes, which keeps the system simple 
 
 ## Bosses
 
-Bosses are periodic pressure spikes. They spawn outside the screen with a UI warning and show a boss health bar.
+Bosses are periodic pressure spikes. A warning appears shortly before the boss spawns, giving the player time to reposition before the boss enters from outside the screen. Bosses show a health bar with readable HP values.
 
 Implemented bosses:
 
@@ -73,7 +73,11 @@ Breakable objects are generated per world chunk and avoid the visible camera are
 
 ## Special Pickups
 
-The first special pickup is `Magnet`. It pulls all active XP Orbs to the player from anywhere in the run. The pickup is rare and can drop from elites, bosses, and breakables.
+The first special pickup is `Magnet`. It pulls all active XP Orbs to the player from anywhere in the run. The pickup is rare and can drop from elites, bosses, and breakables. Its placeholder visual bobs and pulses so it feels like a special reward instead of another XP orb.
+
+## HUD Readability
+
+HP and XP bars should communicate state changes at a glance. Smooth fill motion, short XP/level feedback, and low-health pulsing are intentionally lightweight, readable, and restrained so they do not compete with combat effects.
 
 ## Chain Lightning
 

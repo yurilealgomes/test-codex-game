@@ -69,6 +69,11 @@ namespace ArcaneSurvival
                 experience.AddExperience(value);
             }
 
+            if (value >= 7f)
+            {
+                SkillEffect.SpawnVfx(transform.position, GetTierColor(value), Vector3.one * 0.55f, 0.16f);
+            }
+
             ReturnToPool();
         }
 

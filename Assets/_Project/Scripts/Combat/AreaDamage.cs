@@ -12,6 +12,7 @@ namespace ArcaneSurvival
         private float durationRemaining;
         private float tickRemaining;
         private bool active;
+        private static readonly Collider[] HitBuffer = new Collider[128];
 
         public void Configure(DamageInfo info, float areaRadius, float areaDuration, float interval, DamageTarget targetTeam)
         {
@@ -50,10 +51,17 @@ namespace ArcaneSurvival
 
         private void DamageTargets()
         {
-            Collider[] hits = Physics.OverlapSphere(transform.position, radius);
-            for (int i = 0; i < hits.Length; i++)
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, radius, HitBuffer);
+            for (int i = 0; i < hitCount; i++)
             {
-                IDamageable damageable = DamageUtility.FindDamageable(hits[i], target);
+                Collider hit = HitBuffer[i];
+                if (hit == null)
+                {
+                    continue;
+                }
+
+                IDamageable damageable = DamageUtility.FindDamageable(hit, target);
+                HitBuffer[i] = null;
                 if (damageable != null && damageable.IsAlive)
                 {
                     damageable.TakeDamage(damageInfo.Clone());

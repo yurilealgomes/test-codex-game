@@ -7,6 +7,7 @@ namespace ArcaneSurvival
         private PlayerStats stats;
         private PlayerExperience experience;
         private GameStateManager stateManager;
+        private readonly Collider[] pickupHits = new Collider[80];
 
         private void Awake()
         {
@@ -26,20 +27,28 @@ namespace ArcaneSurvival
                 return;
             }
 
-            Collider[] hits = Physics.OverlapSphere(transform.position, stats.PickupRadius);
-            for (int i = 0; i < hits.Length; i++)
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, stats.PickupRadius, pickupHits);
+            for (int i = 0; i < hitCount; i++)
             {
-                XPOrb orb = hits[i].GetComponentInParent<XPOrb>();
+                Collider hit = pickupHits[i];
+                if (hit == null)
+                {
+                    continue;
+                }
+
+                XPOrb orb = hit.GetComponentInParent<XPOrb>();
                 if (orb != null)
                 {
                     orb.Collect(experience);
                 }
 
-                SpecialPickup pickup = hits[i].GetComponentInParent<SpecialPickup>();
+                SpecialPickup pickup = hit.GetComponentInParent<SpecialPickup>();
                 if (pickup != null)
                 {
                     pickup.Collect();
                 }
+
+                pickupHits[i] = null;
             }
         }
     }

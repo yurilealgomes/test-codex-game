@@ -24,6 +24,8 @@ namespace ArcaneSurvival
         public bool IsAlive { get { return health != null && health.IsAlive; } }
         public Transform Transform { get { return transform; } }
         public float HealthPercent { get { return health == null ? 0f : health.CurrentHealth / health.MaxHealth; } }
+        public float CurrentHealth { get { return health != null ? health.CurrentHealth : 0f; } }
+        public float MaxHealth { get { return health != null ? health.MaxHealth : 0f; } }
         public string BossName { get { return Data != null ? Data.BossName : "Boss"; } }
 
         private void Awake()

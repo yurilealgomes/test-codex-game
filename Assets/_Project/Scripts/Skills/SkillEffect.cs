@@ -51,6 +51,7 @@ namespace ArcaneSurvival
                 return;
             }
 
+            SpawnVfx(caster.transform.position + Vector3.up * 1f, data.VisualColor, Vector3.one * 0.46f, 0.12f);
             for (int i = 0; i < count; i++)
             {
                 Vector3 direction = MathUtils.DirectionOnPlane(caster.transform.position, target.Transform.position);

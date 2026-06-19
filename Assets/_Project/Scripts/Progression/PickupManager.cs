@@ -77,6 +77,7 @@ namespace ArcaneSurvival
             {
                 XPOrb.PullAllTo(player);
                 SkillEffect.SpawnVfx(player != null ? player.position + Vector3.up * 1.1f : pickup.transform.position, new Color(0.2f, 0.85f, 1f), Vector3.one * 1.8f, 0.35f);
+                EventBus.RaisePickupCollected("Magnet");
             }
         }
     }

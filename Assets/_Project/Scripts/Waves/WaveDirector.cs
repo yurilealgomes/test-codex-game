@@ -4,6 +4,8 @@ namespace ArcaneSurvival
 {
     public sealed class WaveDirector : MonoBehaviour
     {
+        private const float BossWarningLeadSeconds = 6f;
+
         [SerializeField] private float bossIntervalSeconds = 900f;
         [SerializeField] private int maxAliveEnemies = 350;
 
@@ -15,6 +17,8 @@ namespace ArcaneSurvival
         private float spawnTimer;
         private float nextBossTime;
         private RunBalanceSettings balanceSettings;
+        private BossData pendingBossData;
+        private bool bossWarningIssued;
 
         public int CurrentWave { get; private set; } = 1;
 
@@ -57,6 +61,7 @@ namespace ArcaneSurvival
             CurrentWave = Mathf.Max(1, Mathf.FloorToInt(runTimer.ElapsedTime / 60f) + 1);
             EventBus.RaiseRunStatsChanged(GetBossCountdownSeconds(), CurrentWave, EnemyController.ActiveEnemies.Count);
 
+            TryWarnBoss();
             TrySpawnEnemies();
             TrySpawnBoss();
         }
@@ -131,10 +136,23 @@ namespace ArcaneSurvival
                 return;
             }
 
-            BossData bossData = database.Bosses[Random.Range(0, database.Bosses.Count)];
-            EventBus.RaiseBossWarning(bossData.BossName);
+            BossData bossData = pendingBossData != null ? pendingBossData : database.Bosses[Random.Range(0, database.Bosses.Count)];
             spawnDirector.SpawnBoss(bossData);
             nextBossTime += bossIntervalSeconds;
+            pendingBossData = null;
+            bossWarningIssued = false;
+        }
+
+        private void TryWarnBoss()
+        {
+            if (bossWarningIssued || database.Bosses.Count == 0 || runTimer.ElapsedTime < nextBossTime - BossWarningLeadSeconds)
+            {
+                return;
+            }
+
+            pendingBossData = database.Bosses[Random.Range(0, database.Bosses.Count)];
+            EventBus.RaiseBossWarning(pendingBossData.BossName);
+            bossWarningIssued = true;
         }
 
         public void SpawnBossNow()
@@ -148,6 +166,8 @@ namespace ArcaneSurvival
             EventBus.RaiseBossWarning(bossData.BossName);
             spawnDirector.SpawnBoss(bossData);
             nextBossTime = runTimer.ElapsedTime + bossIntervalSeconds;
+            pendingBossData = null;
+            bossWarningIssued = false;
         }
 
         private float GetBossCountdownSeconds()
