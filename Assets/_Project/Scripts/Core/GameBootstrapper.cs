@@ -1,0 +1,423 @@
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace ArcaneSurvival
+{
+    public static class GameBootstrapper
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Bootstrap()
+        {
+            if (Object.FindObjectOfType<GameManager>() != null)
+            {
+                return;
+            }
+
+            EventBus.Clear();
+            ServiceLocator.Clear();
+            EnemyController.ActiveEnemies.Clear();
+            BossController.ActiveBosses.Clear();
+
+            GameDatabase database = CreateDatabase();
+            ServiceLocator.Register(database);
+
+            CreateCanvas();
+            GameObject systems = CreateSystems();
+            CreatePools(systems.GetComponent<PoolManager>(), database);
+            GameObject player = CreatePlayer(database);
+            CreateCamera(player.transform);
+            CreateLights();
+        }
+
+        private static GameObject CreateSystems()
+        {
+            GameObject systems = new GameObject("Game Systems");
+            systems.AddComponent<GameStateManager>();
+            systems.AddComponent<GameManager>();
+            systems.AddComponent<PoolManager>();
+            systems.AddComponent<RunTimer>();
+            systems.AddComponent<DifficultyScaler>();
+            systems.AddComponent<RunProgressionManager>();
+            systems.AddComponent<EnemySpawnDirector>();
+            systems.AddComponent<WaveDirector>();
+            systems.AddComponent<UpgradeOptionGenerator>();
+            systems.AddComponent<UpgradeManager>();
+            systems.AddComponent<SynergyManager>();
+            systems.AddComponent<InfiniteWorldManager>();
+            systems.AddComponent<HUDController>();
+            systems.AddComponent<LevelUpPanel>();
+            systems.AddComponent<PauseMenu>();
+            systems.AddComponent<GameOverPanel>();
+            systems.AddComponent<MainMenu>();
+            systems.AddComponent<BossWarningUI>();
+            systems.AddComponent<BossHealthBar>();
+            systems.AddComponent<SynergyNotificationUI>();
+            systems.AddComponent<MetaProgressionPlaceholder>();
+            return systems;
+        }
+
+        private static void CreateCanvas()
+        {
+            GameObject canvasObject = new GameObject("Game Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            ServiceLocator.Register(canvas);
+
+            if (Object.FindObjectOfType<EventSystem>() == null)
+            {
+                GameObject eventSystem = new GameObject("Event System", typeof(EventSystem), typeof(StandaloneInputModule));
+                eventSystem.transform.SetParent(canvasObject.transform);
+            }
+        }
+
+        private static GameObject CreatePlayer(GameDatabase database)
+        {
+            GameObject player = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            player.name = "Player";
+            player.tag = "Player";
+            player.layer = LayerOrDefault("Player");
+            player.transform.position = Vector3.zero;
+            player.transform.localScale = new Vector3(1f, 1.25f, 1f);
+            SetColor(player, new Color(0.45f, 0.88f, 1f));
+
+            PlayerStats stats = player.AddComponent<PlayerStats>();
+            player.AddComponent<PlayerVisualController>();
+            player.AddComponent<PlayerHealth>();
+            player.AddComponent<PlayerExperience>();
+            PlayerSkillInventory inventory = player.AddComponent<PlayerSkillInventory>();
+            player.AddComponent<PlayerCollector>();
+            player.AddComponent<PlayerController>();
+            player.AddComponent<SkillCaster>();
+
+            inventory.AddStartingSkill(SkillFactory.CreateRuntime(database.FindSkill("Arcane Bolt")));
+            inventory.AddStartingSkill(SkillFactory.CreateRuntime(database.FindSkill("Flame Orbit")));
+            stats.MaxHP = 100f;
+            return player;
+        }
+
+        private static void CreateCamera(Transform target)
+        {
+            GameObject cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
+            cameraObject.tag = "MainCamera";
+            cameraObject.transform.position = target.position + new Vector3(0f, 22f, -22f);
+            cameraObject.transform.rotation = Quaternion.Euler(45f, 45f, 0f);
+
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.045f, 0.055f, 0.07f);
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = 500f;
+
+            cameraObject.AddComponent<CameraShake>();
+            cameraObject.AddComponent<IsometricCameraFollow>();
+        }
+
+        private static void CreateLights()
+        {
+            GameObject lightObject = new GameObject("Key Light", typeof(Light));
+            Light light = lightObject.GetComponent<Light>();
+            light.type = LightType.Directional;
+            light.intensity = 1.25f;
+            light.color = new Color(1f, 0.94f, 0.84f);
+            lightObject.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
+        }
+
+        private static void CreatePools(PoolManager poolManager, GameDatabase database)
+        {
+            GameObject prefabRoot = new GameObject("Runtime Pool Prefabs");
+            prefabRoot.SetActive(false);
+
+            poolManager.RegisterPool("Enemy", CreateEnemyPrefab(prefabRoot.transform), 80, database.PerformanceSettings.MaxAliveEnemies);
+            poolManager.RegisterPool("Boss", CreateBossPrefab(prefabRoot.transform), 2, 8);
+            poolManager.RegisterPool("PlayerProjectile", CreateProjectilePrefab(prefabRoot.transform, "Player Projectile Prefab", new Color(0.75f, 0.24f, 1f), 0.34f), 80, database.PerformanceSettings.MaxAliveProjectiles);
+            poolManager.RegisterPool("EnemyProjectile", CreateProjectilePrefab(prefabRoot.transform, "Enemy Projectile Prefab", new Color(1f, 0.25f, 0.18f), 0.38f), 40, 180);
+            poolManager.RegisterPool("XPOrb", CreateXpOrbPrefab(prefabRoot.transform), 80, 500);
+            poolManager.RegisterPool("FloatingDamageText", CreateFloatingTextPrefab(prefabRoot.transform), 24, database.PerformanceSettings.MaxFloatingDamageTexts);
+            poolManager.RegisterPool("AreaDamage", CreateAreaDamagePrefab(prefabRoot.transform), 24, 160);
+            poolManager.RegisterPool("SkillVFX", CreateVfxPrefab(prefabRoot.transform), 40, database.PerformanceSettings.MaxVfx);
+        }
+
+        private static GameObject CreateEnemyPrefab(Transform parent)
+        {
+            GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            enemy.name = "Enemy Prefab";
+            enemy.transform.SetParent(parent);
+            enemy.layer = LayerOrDefault("Enemy");
+            enemy.AddComponent<PooledObject>();
+            enemy.AddComponent<EnemyController>();
+            enemy.AddComponent<DespawnWhenFarFromPlayer>().SetDistance(70f);
+            return enemy;
+        }
+
+        private static GameObject CreateBossPrefab(Transform parent)
+        {
+            GameObject boss = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            boss.name = "Boss Prefab";
+            boss.transform.SetParent(parent);
+            boss.layer = LayerOrDefault("Enemy");
+            boss.AddComponent<PooledObject>();
+            boss.AddComponent<BossController>();
+            boss.AddComponent<BossSpawnWarning>();
+            return boss;
+        }
+
+        private static GameObject CreateProjectilePrefab(Transform parent, string name, Color color, float size)
+        {
+            GameObject projectile = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            projectile.name = name;
+            projectile.transform.SetParent(parent);
+            projectile.transform.localScale = Vector3.one * size;
+            projectile.layer = LayerOrDefault("Projectile");
+            SetColor(projectile, color);
+            projectile.AddComponent<PooledObject>();
+            projectile.AddComponent<Projectile>();
+            return projectile;
+        }
+
+        private static GameObject CreateXpOrbPrefab(Transform parent)
+        {
+            GameObject orb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            orb.name = "XP Orb Prefab";
+            orb.transform.SetParent(parent);
+            orb.transform.localScale = Vector3.one * 0.45f;
+            orb.layer = LayerOrDefault("Pickup");
+            SetColor(orb, new Color(0.25f, 0.7f, 1f));
+            orb.AddComponent<PooledObject>();
+            orb.AddComponent<XPOrb>();
+            return orb;
+        }
+
+        private static GameObject CreateFloatingTextPrefab(Transform parent)
+        {
+            GameObject text = new GameObject("Floating Damage Text Prefab", typeof(TextMesh));
+            text.transform.SetParent(parent);
+            text.AddComponent<PooledObject>();
+            text.AddComponent<FloatingDamageText>();
+            return text;
+        }
+
+        private static GameObject CreateAreaDamagePrefab(Transform parent)
+        {
+            GameObject area = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            area.name = "Area Damage Prefab";
+            area.transform.SetParent(parent);
+            area.layer = LayerOrDefault("Projectile");
+            SetColor(area, new Color(0.5f, 0.15f, 0.8f, 0.72f));
+            area.AddComponent<PooledObject>();
+            area.AddComponent<AreaDamage>();
+            return area;
+        }
+
+        private static GameObject CreateVfxPrefab(Transform parent)
+        {
+            GameObject vfx = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            vfx.name = "Skill VFX Prefab";
+            vfx.transform.SetParent(parent);
+            SetColor(vfx, Color.white);
+            vfx.AddComponent<PooledObject>();
+            vfx.AddComponent<SimpleVFX>();
+            return vfx;
+        }
+
+        private static GameDatabase CreateDatabase()
+        {
+            GameDatabase database = new GameDatabase();
+            database.PerformanceSettings = ScriptableObject.CreateInstance<PerformanceSettings>();
+            database.WorldChunkData = CreateWorldChunkData();
+            CreateSkills(database);
+            CreateEnemies(database);
+            CreateBosses(database);
+            CreateUpgrades(database);
+            CreateSynergies(database);
+            return database;
+        }
+
+        private static WorldChunkData CreateWorldChunkData()
+        {
+            WorldChunkData data = ScriptableObject.CreateInstance<WorldChunkData>();
+            data.PrimaryGroundColor = new Color(0.14f, 0.20f, 0.18f);
+            data.SecondaryGroundColor = new Color(0.11f, 0.16f, 0.18f);
+            data.DecorationColor = new Color(0.26f, 0.30f, 0.29f);
+            data.DecorationsPerChunk = 5;
+            return data;
+        }
+
+        private static void CreateSkills(GameDatabase database)
+        {
+            database.Skills.Add(CreateSkill("Arcane Bolt", "Fires seeking arcane projectiles at the nearest enemy.", SkillEffectKind.ArcaneBolt, SkillType.Active, new[] { SkillTag.Arcane }, 16f, 0.75f, 18f, 2.2f, 0f, 1, 19f, true, SkillTargetingMode.NearestEnemy, new Color(0.7f, 0.25f, 1f)));
+            database.Skills.Add(CreateSkill("Flame Orbit", "Creates fire orbs that orbit the caster and burn nearby enemies.", SkillEffectKind.FlameOrbit, SkillType.Passive, new[] { SkillTag.Fire }, 7f, 0f, 0f, 2.8f, 0f, 2, 0f, true, SkillTargetingMode.AroundPlayer, new Color(1f, 0.32f, 0.08f)));
+            database.Skills.Add(CreateSkill("Ice Nova", "Releases a freezing burst around the player and slows enemies.", SkillEffectKind.IceNova, SkillType.Active, new[] { SkillTag.Ice }, 20f, 4.6f, 0f, 4.2f, 2.5f, 1, 0f, true, SkillTargetingMode.AroundPlayer, new Color(0.45f, 0.85f, 1f)));
+            database.Skills.Add(CreateSkill("Lightning Chain", "Strikes an enemy and jumps to nearby targets.", SkillEffectKind.LightningChain, SkillType.Active, new[] { SkillTag.Lightning }, 22f, 3.1f, 17f, 0f, 0f, 1, 0f, true, SkillTargetingMode.Chain, new Color(1f, 0.9f, 0.18f)));
+            database.Skills.Add(CreateSkill("Void Zone", "Opens a damaging void field under a nearby enemy.", SkillEffectKind.VoidZone, SkillType.Active, new[] { SkillTag.Void }, 9f, 5.2f, 16f, 3.2f, 4f, 1, 0f, true, SkillTargetingMode.GroundAtEnemy, new Color(0.2f, 0.05f, 0.32f)));
+            database.Skills.Add(CreateSkill("Nature Spikes", "Summons piercing spikes below nearby enemies.", SkillEffectKind.NatureSpikes, SkillType.Active, new[] { SkillTag.Nature }, 32f, 3.8f, 15f, 1f, 0f, 3, 0f, true, SkillTargetingMode.NearbyEnemies, new Color(0.25f, 0.78f, 0.35f)));
+        }
+
+        private static SkillData CreateSkill(string name, string description, SkillEffectKind kind, SkillType type, SkillTag[] tags, float damage, float cooldown, float range, float area, float duration, int projectileCount, float projectileSpeed, bool canCrit, SkillTargetingMode targeting, Color color)
+        {
+            SkillData data = ScriptableObject.CreateInstance<SkillData>();
+            data.SkillName = name;
+            data.Description = description;
+            data.EffectKind = kind;
+            data.SkillType = type;
+            data.ElementTags = tags;
+            data.BaseDamage = damage;
+            data.Cooldown = cooldown;
+            data.Range = range;
+            data.Area = area;
+            data.Duration = duration;
+            data.ProjectileCount = projectileCount;
+            data.ProjectileSpeed = projectileSpeed;
+            data.CanCrit = canCrit;
+            data.TargetingMode = targeting;
+            data.VisualColor = color;
+            data.UpgradePool = new[] { "Damage", "Cooldown", "Area", "Projectiles" };
+            data.SynergyRules = new[] { "Elemental tag matching" };
+            return data;
+        }
+
+        private static void CreateEnemies(GameDatabase database)
+        {
+            database.Enemies.Add(CreateEnemy("Wisp", 18f, 4.2f, 5f, 1f, EnemyAttackType.Contact, EnemyMovementStyle.Direct, 48f, new Color(0.55f, 0.85f, 1f)));
+            database.Enemies.Add(CreateEnemy("Golem Shard", 64f, 2.0f, 12f, 4f, EnemyAttackType.Contact, EnemyMovementStyle.Heavy, 12f, new Color(0.55f, 0.50f, 0.42f)));
+            database.Enemies.Add(CreateEnemy("Hex Bat", 14f, 5.3f, 6f, 2f, EnemyAttackType.Contact, EnemyMovementStyle.Flanking, 28f, new Color(0.62f, 0.25f, 0.82f)));
+            database.Enemies.Add(CreateEnemy("Cultist", 34f, 2.8f, 9f, 3f, EnemyAttackType.Ranged, EnemyMovementStyle.Direct, 16f, new Color(0.75f, 0.18f, 0.25f)));
+        }
+
+        private static EnemyData CreateEnemy(string name, float hp, float speed, float damage, float xp, EnemyAttackType attack, EnemyMovementStyle movement, float weight, Color color)
+        {
+            EnemyData data = ScriptableObject.CreateInstance<EnemyData>();
+            data.EnemyName = name;
+            data.MaxHP = hp;
+            data.MoveSpeed = speed;
+            data.Damage = damage;
+            data.XPDrop = xp;
+            data.AttackType = attack;
+            data.MovementStyle = movement;
+            data.Weight = weight;
+            data.BodyColor = color;
+            data.SpawnRules = new[] { "Spawn outside the camera ring" };
+            return data;
+        }
+
+        private static void CreateBosses(GameDatabase database)
+        {
+            BossData guardian = ScriptableObject.CreateInstance<BossData>();
+            guardian.BossName = "Rune Guardian";
+            guardian.Kind = BossKind.RuneGuardian;
+            guardian.MaxHP = 900f;
+            guardian.Damage = 22f;
+            guardian.MoveSpeed = 2.3f;
+            guardian.XPReward = 45f;
+            guardian.UpgradeRewardChance = 0.35f;
+            guardian.AttackPatterns = new[] { "Charge", "Close area slam" };
+            guardian.ScalingRules = new[] { "Health and damage increase after each boss defeat" };
+            guardian.BodyColor = new Color(0.28f, 0.62f, 0.55f);
+            database.Bosses.Add(guardian);
+
+            BossData witch = ScriptableObject.CreateInstance<BossData>();
+            witch.BossName = "Astral Witch";
+            witch.Kind = BossKind.AstralWitch;
+            witch.MaxHP = 720f;
+            witch.Damage = 18f;
+            witch.MoveSpeed = 3.1f;
+            witch.XPReward = 45f;
+            witch.UpgradeRewardChance = 0.35f;
+            witch.AttackPatterns = new[] { "Magic projectile", "Void hazard", "Reposition" };
+            witch.ScalingRules = new[] { "Health and damage increase after each boss defeat" };
+            witch.BodyColor = new Color(0.58f, 0.25f, 0.86f);
+            database.Bosses.Add(witch);
+        }
+
+        private static void CreateUpgrades(GameDatabase database)
+        {
+            AddUpgrade(database, "Sharpened Spellwork", "Increase all spell damage.", UpgradeRarity.Common, UpgradeEffect.IncreaseDamage, 0.12f, "", "All Skills");
+            AddUpgrade(database, "Quickened Casting", "Reduce global skill cooldowns.", UpgradeRarity.Common, UpgradeEffect.ReduceCooldown, 0.06f, "", "All Skills");
+            AddUpgrade(database, "Split Focus", "Gain one extra projectile.", UpgradeRarity.Rare, UpgradeEffect.IncreaseProjectileCount, 1f, "", "Projectile Skills");
+            AddUpgrade(database, "Widened Sigils", "Increase spell area.", UpgradeRarity.Common, UpgradeEffect.IncreaseArea, 0.15f, "", "Area Skills");
+            AddUpgrade(database, "Lingering Power", "Increase spell duration.", UpgradeRarity.Common, UpgradeEffect.IncreaseDuration, 0.18f, "", "Duration Skills");
+            AddUpgrade(database, "Fleet Steps", "Increase movement speed.", UpgradeRarity.Common, UpgradeEffect.IncreaseMoveSpeed, 0.55f, "", "Player");
+            AddUpgrade(database, "Magnetized Runes", "Increase XP pickup radius.", UpgradeRarity.Common, UpgradeEffect.IncreasePickupRadius, 0.75f, "", "Player");
+            AddUpgrade(database, "Vital Ward", "Increase maximum health and heal fully.", UpgradeRarity.Rare, UpgradeEffect.IncreaseMaxHP, 22f, "", "Player");
+            AddUpgrade(database, "Keen Arcana", "Increase critical chance.", UpgradeRarity.Rare, UpgradeEffect.IncreaseCriticalChance, 0.04f, "", "Player");
+            AddUpgrade(database, "Ruinous Crits", "Increase critical damage.", UpgradeRarity.Epic, UpgradeEffect.IncreaseCriticalDamage, 0.28f, "", "Player");
+            AddUpgrade(database, "Learn Ice Nova", "Unlock Ice Nova.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Ice Nova", "Ice Nova");
+            AddUpgrade(database, "Learn Lightning Chain", "Unlock Lightning Chain.", UpgradeRarity.Rare, UpgradeEffect.UnlockNewSkill, 1f, "Lightning Chain", "Lightning Chain");
+            AddUpgrade(database, "Learn Void Zone", "Unlock Void Zone.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Void Zone", "Void Zone");
+            AddUpgrade(database, "Learn Nature Spikes", "Unlock Nature Spikes.", UpgradeRarity.Epic, UpgradeEffect.UnlockNewSkill, 1f, "Nature Spikes", "Nature Spikes");
+            AddUpgrade(database, "Arcane Bolt Mastery", "Upgrade Arcane Bolt.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Arcane Bolt", "Arcane Bolt");
+            AddUpgrade(database, "Flame Orbit Mastery", "Upgrade Flame Orbit.", UpgradeRarity.Common, UpgradeEffect.UpgradeExistingSkill, 1f, "Flame Orbit", "Flame Orbit");
+            AddUpgrade(database, "Elemental Convergence", "Strengthen elemental synergies.", UpgradeRarity.Legendary, UpgradeEffect.ActivateOrStrengthenSynergy, 0.18f, "Lightning Chain", "Synergy");
+        }
+
+        private static void AddUpgrade(GameDatabase database, string name, string description, UpgradeRarity rarity, UpgradeEffect effect, float amount, string targetSkill, string affectedSkill)
+        {
+            UpgradeData data = ScriptableObject.CreateInstance<UpgradeData>();
+            data.UpgradeName = name;
+            data.Description = description;
+            data.Rarity = rarity;
+            data.Effect = effect;
+            data.Amount = amount;
+            data.TargetSkillName = targetSkill;
+            data.AffectedSkillLabel = affectedSkill;
+            database.Upgrades.Add(data);
+        }
+
+        private static void CreateSynergies(GameDatabase database)
+        {
+            AddSynergy(database, "Explosive Arcanum", "Arcane projectiles explode when they hit enemies.", SynergyEffect.ExplosiveArcanum, new[] { SkillTag.Fire, SkillTag.Arcane }, new Color(0.95f, 0.28f, 1f), 5);
+            AddSynergy(database, "Stormfrost", "Lightning deals extra damage to slowed enemies.", SynergyEffect.Stormfrost, new[] { SkillTag.Ice, SkillTag.Lightning }, new Color(0.48f, 0.85f, 1f), 4);
+            AddSynergy(database, "Burning Abyss", "Flame damage can leave short-lived void burns.", SynergyEffect.BurningAbyss, new[] { SkillTag.Void, SkillTag.Fire }, new Color(0.5f, 0.12f, 0.1f), 3);
+            AddSynergy(database, "Living Runes", "Nature spikes gain an extra duplicated strike.", SynergyEffect.LivingRunes, new[] { SkillTag.Nature, SkillTag.Arcane }, new Color(0.4f, 1f, 0.46f), 3);
+            AddSynergy(database, "Gravity Storm", "Lightning applies a light pull during chains.", SynergyEffect.GravityStorm, new[] { SkillTag.Lightning, SkillTag.Void }, new Color(0.65f, 0.45f, 1f), 4);
+        }
+
+        private static void AddSynergy(GameDatabase database, string name, string description, SynergyEffect effect, SkillTag[] tags, Color color, int priority)
+        {
+            SynergyData data = ScriptableObject.CreateInstance<SynergyData>();
+            data.SynergyName = name;
+            data.Description = description;
+            data.EffectType = effect;
+            data.RequiredTags = tags;
+            data.RequiredSkillLevels = new string[0];
+            data.VisualFeedback = color;
+            data.Priority = priority;
+            data.AllowStacking = false;
+            database.Synergies.Add(data);
+        }
+
+        private static int LayerOrDefault(string layerName)
+        {
+            int layer = LayerMask.NameToLayer(layerName);
+            return layer < 0 ? 0 : layer;
+        }
+
+        private static void SetColor(GameObject gameObject, Color color)
+        {
+            Renderer renderer = gameObject.GetComponentInChildren<Renderer>();
+            if (renderer != null)
+            {
+                renderer.material = CreateMaterial(color);
+            }
+        }
+
+        private static Material CreateMaterial(Color color)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            Material material = new Material(shader);
+            material.color = color;
+            return material;
+        }
+    }
+}

@@ -24,6 +24,7 @@
 
 sysinfo.txt
 crashlytics-build.properties
+unity-validation.log
 
 *.apk
 *.aab
