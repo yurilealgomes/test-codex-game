@@ -18,6 +18,7 @@ namespace ArcaneSurvival
             ServiceLocator.Clear();
             EnemyController.ActiveEnemies.Clear();
             BossController.ActiveBosses.Clear();
+            BreakableObject.ActiveBreakables.Clear();
 
             GameDatabase database = CreateDatabase();
             ServiceLocator.Register(database);
@@ -51,6 +52,7 @@ namespace ArcaneSurvival
             systems.AddComponent<GameOverPanel>();
             systems.AddComponent<MainMenu>();
             systems.AddComponent<StartingSkillSelectionPanel>();
+            systems.AddComponent<DebugGodModeController>();
             systems.AddComponent<BossWarningUI>();
             systems.AddComponent<BossHealthBar>();
             systems.AddComponent<SynergyNotificationUI>();
@@ -246,12 +248,12 @@ namespace ArcaneSurvival
             data.SecondaryGroundColor = new Color(0.11f, 0.16f, 0.18f);
             data.DecorationColor = new Color(0.26f, 0.30f, 0.29f);
             data.DecorationsPerChunk = 6;
-            data.BreakablesPerChunk = 7;
+            data.BreakablesPerChunk = 3;
             data.BreakableObjects = new[]
             {
-                CreateBreakableData("Arcane Crystal", 24f, 2f, new Color(0.34f, 0.74f, 1f), new Vector3(0.36f, 0.85f, 0.36f), new Vector3(0.68f, 1.55f, 0.68f)),
-                CreateBreakableData("Rune Stone", 34f, 3f, new Color(0.48f, 0.42f, 0.34f), new Vector3(0.55f, 0.45f, 0.55f), new Vector3(1f, 0.85f, 1f)),
-                CreateBreakableData("Small Relic Pillar", 45f, 4f, new Color(0.52f, 0.38f, 0.78f), new Vector3(0.45f, 0.9f, 0.45f), new Vector3(0.8f, 1.8f, 0.8f))
+                CreateBreakableData("Arcane Crystal", 16f, 2f, new Color(0.34f, 0.74f, 1f), new Vector3(0.36f, 0.85f, 0.36f), new Vector3(0.68f, 1.55f, 0.68f)),
+                CreateBreakableData("Rune Stone", 24f, 3f, new Color(0.48f, 0.42f, 0.34f), new Vector3(0.55f, 0.45f, 0.55f), new Vector3(1f, 0.85f, 1f)),
+                CreateBreakableData("Small Relic Pillar", 32f, 4f, new Color(0.52f, 0.38f, 0.78f), new Vector3(0.45f, 0.9f, 0.45f), new Vector3(0.8f, 1.8f, 0.8f))
             };
             return data;
         }
@@ -303,10 +305,10 @@ namespace ArcaneSurvival
 
         private static void CreateEnemies(GameDatabase database)
         {
-            database.Enemies.Add(CreateEnemy("Wisp", 18f, 4.2f, 5f, 1f, EnemyAttackType.Contact, EnemyMovementStyle.Direct, 48f, new Color(0.55f, 0.85f, 1f)));
-            database.Enemies.Add(CreateEnemy("Golem Shard", 64f, 2.0f, 12f, 4f, EnemyAttackType.Contact, EnemyMovementStyle.Heavy, 12f, new Color(0.55f, 0.50f, 0.42f)));
-            database.Enemies.Add(CreateEnemy("Hex Bat", 14f, 5.3f, 6f, 2f, EnemyAttackType.Contact, EnemyMovementStyle.Flanking, 28f, new Color(0.62f, 0.25f, 0.82f)));
-            database.Enemies.Add(CreateEnemy("Cultist", 34f, 2.8f, 9f, 3f, EnemyAttackType.Ranged, EnemyMovementStyle.Direct, 16f, new Color(0.75f, 0.18f, 0.25f)));
+            database.Enemies.Add(CreateEnemy("Wisp", 18f, 3.3f, 5f, 1f, EnemyAttackType.Contact, EnemyMovementStyle.Direct, 48f, new Color(0.55f, 0.85f, 1f)));
+            database.Enemies.Add(CreateEnemy("Golem Shard", 64f, 1.65f, 12f, 4f, EnemyAttackType.Contact, EnemyMovementStyle.Heavy, 12f, new Color(0.55f, 0.50f, 0.42f)));
+            database.Enemies.Add(CreateEnemy("Hex Bat", 14f, 4.25f, 6f, 2f, EnemyAttackType.Contact, EnemyMovementStyle.Flanking, 28f, new Color(0.62f, 0.25f, 0.82f)));
+            database.Enemies.Add(CreateEnemy("Cultist", 34f, 2.2f, 9f, 3f, EnemyAttackType.Ranged, EnemyMovementStyle.Direct, 16f, new Color(0.75f, 0.18f, 0.25f)));
         }
 
         private static EnemyData CreateEnemy(string name, float hp, float speed, float damage, float xp, EnemyAttackType attack, EnemyMovementStyle movement, float weight, Color color)

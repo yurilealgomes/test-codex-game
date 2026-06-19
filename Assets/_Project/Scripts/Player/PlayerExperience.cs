@@ -10,6 +10,7 @@ namespace ArcaneSurvival
         private float currentXp;
 
         public int Level { get; private set; } = 1;
+        public float CurrentXp { get { return currentXp; } }
         public float RequiredXp { get; private set; }
 
         private void Awake()

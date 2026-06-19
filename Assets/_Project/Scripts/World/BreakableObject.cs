@@ -5,6 +5,8 @@ namespace ArcaneSurvival
 {
     public sealed class BreakableObject : MonoBehaviour, IDamageable
     {
+        public static readonly System.Collections.Generic.List<BreakableObject> ActiveBreakables = new System.Collections.Generic.List<BreakableObject>();
+
         private BreakableObjectData data;
         private Renderer cachedRenderer;
         private XPDropper xpDropper;
@@ -25,6 +27,19 @@ namespace ArcaneSurvival
             }
         }
 
+        private void OnEnable()
+        {
+            if (!ActiveBreakables.Contains(this))
+            {
+                ActiveBreakables.Add(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            ActiveBreakables.Remove(this);
+        }
+
         public void Initialize(BreakableObjectData objectData, Color tint)
         {
             data = objectData;
@@ -36,6 +51,14 @@ namespace ArcaneSurvival
             if (cachedRenderer != null)
             {
                 cachedRenderer.material.color = baseColor;
+            }
+        }
+
+        public void BreakInstantly()
+        {
+            if (IsAlive)
+            {
+                Break();
             }
         }
 

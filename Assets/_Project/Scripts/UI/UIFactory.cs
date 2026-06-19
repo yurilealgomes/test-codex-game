@@ -79,11 +79,27 @@ namespace ArcaneSurvival
             RectTransform fillRect = CreateRect(background.transform, name + " Fill", Vector2.zero, Vector2.one, new Vector2(2f, 2f), new Vector2(-2f, -2f));
             Image fill = fillRect.gameObject.AddComponent<Image>();
             fill.color = fillColor;
-            fill.type = Image.Type.Filled;
-            fill.fillMethod = Image.FillMethod.Horizontal;
-            fill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            fill.fillAmount = 1f;
+            fill.type = Image.Type.Simple;
+            SetBarFill(fill, 1f);
             return fill;
+        }
+
+        public static void SetBarFill(Image fill, float value)
+        {
+            if (fill == null)
+            {
+                return;
+            }
+
+            float percent = Mathf.Clamp01(value);
+            fill.fillAmount = percent;
+            fill.enabled = percent > 0.001f;
+
+            RectTransform rect = fill.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = new Vector2(percent, 1f);
+            rect.offsetMin = new Vector2(2f, 2f);
+            rect.offsetMax = new Vector2(-2f, -2f);
         }
     }
 }

@@ -42,6 +42,22 @@ namespace ArcaneSurvival
                 }
             }
 
+            for (int i = 0; i < BreakableObject.ActiveBreakables.Count; i++)
+            {
+                BreakableObject breakable = BreakableObject.ActiveBreakables[i];
+                if (breakable == null || !breakable.IsAlive)
+                {
+                    continue;
+                }
+
+                float distance = (breakable.transform.position - origin).sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = breakable;
+                }
+            }
+
             return best;
         }
 
@@ -65,6 +81,15 @@ namespace ArcaneSurvival
                 if (boss != null && boss.IsAlive && (boss.transform.position - origin).sqrMagnitude <= rangeSqr)
                 {
                     results.Add(boss);
+                }
+            }
+
+            for (int i = 0; i < BreakableObject.ActiveBreakables.Count && results.Count < maxCount; i++)
+            {
+                BreakableObject breakable = BreakableObject.ActiveBreakables[i];
+                if (breakable != null && breakable.IsAlive && (breakable.transform.position - origin).sqrMagnitude <= rangeSqr)
+                {
+                    results.Add(breakable);
                 }
             }
 

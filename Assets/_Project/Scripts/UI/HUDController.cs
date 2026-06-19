@@ -29,7 +29,7 @@ namespace ArcaneSurvival
             RectTransform root = UIFactory.CreateRect(canvas.transform, "HUD", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             healthFill = UIFactory.CreateBar(root, "Health Bar", new Color(0.95f, 0.16f, 0.14f), new Vector2(0.02f, 0.92f), new Vector2(0.34f, 0.965f), Vector2.zero, Vector2.zero);
             xpFill = UIFactory.CreateBar(root, "XP Bar", new Color(0.25f, 0.62f, 1f), new Vector2(0.02f, 0.875f), new Vector2(0.34f, 0.91f), Vector2.zero, Vector2.zero);
-            xpFill.fillAmount = 0f;
+            UIFactory.SetBarFill(xpFill, 0f);
             healthText = UIFactory.CreateText(root, "Health Text", "HP 100 / 100", 16, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.92f), new Vector2(0.32f, 0.965f), Vector2.zero, Vector2.zero);
             xpText = UIFactory.CreateText(root, "XP Text", "XP 0 / 18", 15, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.875f), new Vector2(0.32f, 0.91f), Vector2.zero, Vector2.zero);
             levelText = UIFactory.CreateText(root, "Level Text", "Level 1", 18, Color.white, TextAnchor.MiddleLeft, new Vector2(0.035f, 0.82f), new Vector2(0.22f, 0.86f), Vector2.zero, Vector2.zero);
@@ -38,6 +38,19 @@ namespace ArcaneSurvival
             timerText = UIFactory.CreateText(root, "Timer", "00:00", 22, Color.white, TextAnchor.UpperCenter, new Vector2(0.44f, 0.925f), new Vector2(0.56f, 0.98f), Vector2.zero, Vector2.zero);
             waveText = UIFactory.CreateText(root, "Wave", "Wave 1", 18, Color.white, TextAnchor.MiddleRight, new Vector2(0.78f, 0.925f), new Vector2(0.97f, 0.965f), Vector2.zero, Vector2.zero);
             enemyCountText = UIFactory.CreateText(root, "Enemy Count", "Enemies: 0", 16, Color.white, TextAnchor.MiddleRight, new Vector2(0.78f, 0.885f), new Vector2(0.97f, 0.925f), Vector2.zero, Vector2.zero);
+
+            PlayerHealth playerHealth;
+            PlayerStats playerStats;
+            if (ServiceLocator.TryGet(out playerHealth) && ServiceLocator.TryGet(out playerStats))
+            {
+                HandleHealthChanged(playerHealth.CurrentHealth, playerStats.MaxHP);
+            }
+
+            PlayerExperience playerExperience;
+            if (ServiceLocator.TryGet(out playerExperience))
+            {
+                HandleExperienceChanged(playerExperience.Level, playerExperience.CurrentXp, playerExperience.RequiredXp);
+            }
         }
 
         private void OnDestroy()
@@ -52,13 +65,16 @@ namespace ArcaneSurvival
             if (healthFill != null)
             {
                 float percent = max <= 0f ? 0f : current / max;
-                healthFill.fillAmount = percent;
+                UIFactory.SetBarFill(healthFill, percent);
                 healthFill.color = GetHealthColor(percent);
-                lowHealthText.gameObject.SetActive(percent <= 0.28f);
-                if (lowHealthText.gameObject.activeSelf)
+                if (lowHealthText != null)
                 {
-                    float pulse = 0.65f + Mathf.Sin(Time.unscaledTime * 8f) * 0.35f;
-                    lowHealthText.color = new Color(1f, 0.18f, 0.12f, pulse);
+                    lowHealthText.gameObject.SetActive(percent <= 0.28f);
+                    if (lowHealthText.gameObject.activeSelf)
+                    {
+                        float pulse = 0.65f + Mathf.Sin(Time.unscaledTime * 8f) * 0.35f;
+                        lowHealthText.color = new Color(1f, 0.18f, 0.12f, pulse);
+                    }
                 }
             }
 
@@ -72,7 +88,7 @@ namespace ArcaneSurvival
         {
             if (xpFill != null)
             {
-                xpFill.fillAmount = required <= 0f ? 0f : current / required;
+                UIFactory.SetBarFill(xpFill, required <= 0f ? 0f : current / required);
             }
 
             if (levelText != null)
@@ -86,11 +102,11 @@ namespace ArcaneSurvival
             }
         }
 
-        private void HandleRunStatsChanged(float elapsedTime, int wave, int enemiesAlive)
+        private void HandleRunStatsChanged(float bossCountdownSeconds, int wave, int enemiesAlive)
         {
-            int minutes = Mathf.FloorToInt(elapsedTime / 60f);
-            int seconds = Mathf.FloorToInt(elapsedTime % 60f);
-            timerText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
+            int minutes = Mathf.FloorToInt(bossCountdownSeconds / 60f);
+            int seconds = Mathf.FloorToInt(bossCountdownSeconds % 60f);
+            timerText.text = "Boss in " + minutes.ToString("00") + ":" + seconds.ToString("00");
             waveText.text = "Wave " + wave;
             enemyCountText.text = "Enemies: " + enemiesAlive;
         }

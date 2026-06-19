@@ -55,7 +55,7 @@ namespace ArcaneSurvival
             }
 
             CurrentWave = Mathf.Max(1, Mathf.FloorToInt(runTimer.ElapsedTime / 60f) + 1);
-            EventBus.RaiseRunStatsChanged(runTimer.ElapsedTime, CurrentWave, EnemyController.ActiveEnemies.Count);
+            EventBus.RaiseRunStatsChanged(GetBossCountdownSeconds(), CurrentWave, EnemyController.ActiveEnemies.Count);
 
             TrySpawnEnemies();
             TrySpawnBoss();
@@ -77,7 +77,8 @@ namespace ArcaneSurvival
 
             int baseBatchSize = balanceSettings != null ? balanceSettings.BaseBatchSize : 2;
             int maxBatchSize = balanceSettings != null ? balanceSettings.MaxBatchSize : 18;
-            int batchSize = Mathf.Clamp(baseBatchSize + Mathf.FloorToInt(CurrentWave * 0.65f) + Mathf.FloorToInt(runTimer.MinutesElapsed * 0.5f), 2, maxBatchSize);
+            float pressureMinutes = Mathf.Max(0f, runTimer.MinutesElapsed - 1f);
+            int batchSize = Mathf.Clamp(baseBatchSize + Mathf.FloorToInt(pressureMinutes * 0.4f) + Mathf.FloorToInt(CurrentWave / 6f), baseBatchSize, maxBatchSize);
             for (int i = 0; i < batchSize && EnemyController.ActiveEnemies.Count < maxAliveEnemies; i++)
             {
                 EnemyData data = WeightedRandom.Pick(database.Enemies, GetSpawnWeight);
@@ -93,7 +94,7 @@ namespace ArcaneSurvival
             float baseInterval = balanceSettings != null ? balanceSettings.BaseSpawnInterval : 1.4f;
             float minimumInterval = balanceSettings != null ? balanceSettings.MinimumSpawnInterval : 0.12f;
             float reduction = balanceSettings != null ? balanceSettings.SpawnIntervalReductionPerMinute : 0.06f;
-            spawnTimer = Mathf.Max(minimumInterval, baseInterval - runTimer.MinutesElapsed * reduction);
+            spawnTimer = Mathf.Max(minimumInterval, baseInterval - pressureMinutes * reduction);
         }
 
         private float GetSpawnWeight(EnemyData enemy)
@@ -132,6 +133,29 @@ namespace ArcaneSurvival
             EventBus.RaiseBossWarning(bossData.BossName);
             spawnDirector.SpawnBoss(bossData);
             nextBossTime += bossIntervalSeconds;
+        }
+
+        public void SpawnBossNow()
+        {
+            if (database == null || spawnDirector == null || runTimer == null || database.Bosses.Count == 0)
+            {
+                return;
+            }
+
+            BossData bossData = database.Bosses[Random.Range(0, database.Bosses.Count)];
+            EventBus.RaiseBossWarning(bossData.BossName);
+            spawnDirector.SpawnBoss(bossData);
+            nextBossTime = runTimer.ElapsedTime + bossIntervalSeconds;
+        }
+
+        private float GetBossCountdownSeconds()
+        {
+            if (runTimer == null)
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(0f, nextBossTime - runTimer.ElapsedTime);
         }
     }
 }

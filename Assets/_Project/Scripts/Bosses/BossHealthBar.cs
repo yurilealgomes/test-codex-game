@@ -41,7 +41,7 @@ namespace ArcaneSurvival
             }
 
             root.SetActive(true);
-            fill.fillAmount = currentBoss.HealthPercent;
+            UIFactory.SetBarFill(fill, currentBoss.HealthPercent);
             nameText.text = currentBoss.BossName;
         }
 

@@ -34,13 +34,14 @@ namespace ArcaneSurvival
         private void Update()
         {
             float minutesElapsed = runTimer != null ? runTimer.MinutesElapsed : 0f;
+            float pressureMinutes = Mathf.Max(0f, minutesElapsed - 2f);
             int bossesDefeated = progressionManager != null ? progressionManager.BossesDefeated : 0;
 
-            EnemyHpMultiplier = 1f + minutesElapsed * 0.08f + bossesDefeated * 0.25f;
-            EnemyDamageMultiplier = 1f + minutesElapsed * 0.04f + bossesDefeated * 0.15f;
-            EnemySpeedMultiplier = 1f + minutesElapsed * 0.015f;
-            SpawnRateMultiplier = 1f + minutesElapsed * 0.055f;
-            EliteChance = Mathf.Min(0.01f + minutesElapsed * 0.004f, 0.22f);
+            EnemyHpMultiplier = 1f + minutesElapsed * 0.065f + bossesDefeated * 0.25f;
+            EnemyDamageMultiplier = 1f + minutesElapsed * 0.035f + bossesDefeated * 0.15f;
+            EnemySpeedMultiplier = 1f + minutesElapsed * 0.01f;
+            SpawnRateMultiplier = 1f + pressureMinutes * 0.08f;
+            EliteChance = Mathf.Min(0.005f + pressureMinutes * 0.005f, 0.22f);
         }
     }
 }
